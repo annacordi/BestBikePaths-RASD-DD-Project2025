@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.6.1">
+  <collaboration id="Collaboration_TripRecording">
+    <participant id="Participant_RegisteredUser" name="Registered User" processRef="Process_RegisteredUser" />
+    <participant id="Participant_BBPSystem" name="BBP System" processRef="Process_BBPSystem" />
+    <messageFlow id="MessageFlow_StopTrip" sourceRef="Task_StopRecording" targetRef="Event_ReceiveStopTrip" />
+    <messageFlow id="MessageFlow_SaveRequest" sourceRef="Task_SubmitTripData" targetRef="Event_ReceiveSaveRequest" />
+    <messageFlow id="MessageFlow_TripSaved" sourceRef="Task_ReturnSuccess" targetRef="Event_ReceiveTripSaved" />
+    <messageFlow id="Flow_0b0v7v0" sourceRef="Activity_0e3niro" targetRef="Event_1bt0kwn" />
+    <messageFlow id="Flow_06r0frd" sourceRef="Task_StartRecording" targetRef="Event_1ak4mig" />
+    <messageFlow id="Flow_1od1bcu" sourceRef="Activity_0hvqty2" targetRef="Event_0slvkml" />
+    <messageFlow id="Flow_1j673oo" sourceRef="Activity_0ki5d2q" targetRef="Event_1djzamm" />
+    <textAnnotation id="TextAnnotation_1ex9pqe">
+      <text>Receive storing request</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_0g65b0n">
+      <text>save and publish</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_07uc0z6">
+      <text>Don't save and publish</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_0rte56w">
+      <text>Deletion request</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_0rqx11o">
+      <text>Path deleted</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_03hs36y">
+      <text>Confirmation of deletion</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_0tb6rd4">
+      <text>Path deleted</text>
+    </textAnnotation>
+  </collaboration>
+  <process id="Process_RegisteredUser" name="Registered User Process" isExecutable="false">
+    <startEvent id="StartEvent_RU" name="Want to record trip">
+      <outgoing>Flow_Start_Task1</outgoing>
+    </startEvent>
+    <task id="Task_StartRecording" name="Start trip recording">
+      <incoming>Flow_Start_Task1</incoming>
+      <outgoing>Flow_Task1_Task2</outgoing>
+    </task>
+    <task id="Task_BikeTrip" name="Bike trip (GPS and sensor data collected)">
+      <incoming>Flow_Task1_Task2</incoming>
+      <outgoing>Flow_Task2_Task3</outgoing>
+    </task>
+    <task id="Task_StopRecording" name="Stop trip recording">
+      <incoming>Flow_Task2_Task3</incoming>
+      <outgoing>Flow_Task3_Gateway1</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_SaveOrPublish" name="Save and publish?">
+      <incoming>Flow_Task3_Gateway1</incoming>
+      <outgoing>Flow_Gateway1_Publish</outgoing>
+      <outgoing>Flow_1uq7eds</outgoing>
+      <outgoing>Flow_0vv8ty5</outgoing>
+    </exclusiveGateway>
+    <intermediateCatchEvent id="Event_ReceiveTripSaved" name="Receive confirmation">
+      <incoming>Flow_Task4_Wait</incoming>
+      <incoming>Flow_1fkmkvw</incoming>
+      <outgoing>Flow_Wait_End</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <endEvent id="EndEvent_RU" name="Trip saved">
+      <incoming>Flow_Wait_End</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_Start_Task1" sourceRef="StartEvent_RU" targetRef="Task_StartRecording" />
+    <sequenceFlow id="Flow_Task1_Task2" sourceRef="Task_StartRecording" targetRef="Task_BikeTrip" />
+    <sequenceFlow id="Flow_Task2_Task3" sourceRef="Task_BikeTrip" targetRef="Task_StopRecording" />
+    <sequenceFlow id="Flow_Task3_Gateway1" sourceRef="Task_StopRecording" targetRef="Gateway_SaveOrPublish" />
+    <sequenceFlow id="Flow_Gateway1_Publish" name="Only save" sourceRef="Gateway_SaveOrPublish" targetRef="Task_SubmitTripData" />
+    <sequenceFlow id="Flow_Task4_Wait" sourceRef="Task_SubmitTripData" targetRef="Event_ReceiveTripSaved" />
+    <sequenceFlow id="Flow_Wait_End" sourceRef="Event_ReceiveTripSaved" targetRef="EndEvent_RU" />
+    <task id="Activity_0e3niro" name="Save data in MyTrips">
+      <incoming>Flow_1uq7eds</incoming>
+      <outgoing>Flow_1fkmkvw</outgoing>
+    </task>
+    <sequenceFlow id="Flow_1uq7eds" sourceRef="Gateway_SaveOrPublish" targetRef="Activity_0e3niro" />
+    <sequenceFlow id="Flow_1fkmkvw" sourceRef="Activity_0e3niro" targetRef="Event_ReceiveTripSaved" />
+    <task id="Task_SubmitTripData" name="Submit trip data to be published">
+      <incoming>Flow_Gateway1_Publish</incoming>
+      <outgoing>Flow_Task4_Wait</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0vv8ty5" sourceRef="Gateway_SaveOrPublish" targetRef="Activity_0hvqty2" />
+    <task id="Activity_0hvqty2" name="Don&#39;t save">
+      <incoming>Flow_0vv8ty5</incoming>
+      <outgoing>Flow_1lthuj8</outgoing>
+    </task>
+    <sequenceFlow id="Flow_0kemoy1" sourceRef="Event_1djzamm" targetRef="Event_06pwy75" />
+    <sequenceFlow id="Flow_1lthuj8" sourceRef="Activity_0hvqty2" targetRef="Event_1djzamm" />
+    <intermediateCatchEvent id="Event_1djzamm">
+      <incoming>Flow_1lthuj8</incoming>
+      <outgoing>Flow_0kemoy1</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1t6swii" />
+    </intermediateCatchEvent>
+    <endEvent id="Event_06pwy75">
+      <incoming>Flow_0kemoy1</incoming>
+    </endEvent>
+  </process>
+  <process id="Process_BBPSystem" name="BBP System Process" isExecutable="false">
+    <intermediateCatchEvent id="Event_ReceiveStopTrip" name="Receive stop request">
+      <incoming>Flow_Sensor_Wait</incoming>
+      <outgoing>Flow_Stop_Process</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_ProcessTripData" name="Process trip data: calculate distance, speed, metrics">
+      <incoming>Flow_Stop_Process</incoming>
+      <outgoing>Flow_Process_Weather</outgoing>
+    </task>
+    <task id="Task_FetchWeatherData" name="Fetch weather data from external service (if available)">
+      <incoming>Flow_Process_Weather</incoming>
+      <outgoing>Flow_Weather_Wait</outgoing>
+    </task>
+    <task id="Task_SavePersonalTrip" name="Save as personal Trip in database">
+      <incoming>Flow_0frk7og</incoming>
+      <outgoing>Flow_Personal_Merge</outgoing>
+    </task>
+    <task id="Task_PublishBikePath" name="Publish as BikePath (make available to community)">
+      <incoming>Flow_0vkysto</incoming>
+      <outgoing>Flow_Publish_Merge</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge" name="">
+      <incoming>Flow_Personal_Merge</incoming>
+      <incoming>Flow_Publish_Merge</incoming>
+      <outgoing>Flow_Merge_Success</outgoing>
+    </exclusiveGateway>
+    <task id="Task_ReturnSuccess" name="Return success confirmation">
+      <incoming>Flow_Merge_Success</incoming>
+      <outgoing>Flow_Success_End</outgoing>
+    </task>
+    <endEvent id="EndEvent_BBP" name="Trip recorded">
+      <incoming>Flow_Success_End</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_GPS_Sensor" sourceRef="Task_CollectGPSData" targetRef="Task_CollectSensorData" />
+    <sequenceFlow id="Flow_Sensor_Wait" sourceRef="Task_CollectSensorData" targetRef="Event_ReceiveStopTrip" />
+    <sequenceFlow id="Flow_Stop_Process" sourceRef="Event_ReceiveStopTrip" targetRef="Task_ProcessTripData" />
+    <sequenceFlow id="Flow_Process_Weather" sourceRef="Task_ProcessTripData" targetRef="Task_FetchWeatherData" />
+    <sequenceFlow id="Flow_Weather_Wait" sourceRef="Task_FetchWeatherData" targetRef="Event_ReceiveSaveRequest" />
+    <sequenceFlow id="Flow_Personal_Merge" sourceRef="Task_SavePersonalTrip" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Publish_Merge" sourceRef="Task_PublishBikePath" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_Merge_Success" sourceRef="Gateway_Merge" targetRef="Task_ReturnSuccess" />
+    <sequenceFlow id="Flow_Success_End" sourceRef="Task_ReturnSuccess" targetRef="EndEvent_BBP" />
+    <sequenceFlow id="Flow_0vkysto" sourceRef="Event_ReceiveSaveRequest" targetRef="Task_PublishBikePath" />
+    <intermediateCatchEvent id="Event_1bt0kwn">
+      <outgoing>Flow_0frk7og</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_13xd5s4" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_0frk7og" sourceRef="Event_1bt0kwn" targetRef="Task_SavePersonalTrip" />
+    <task id="Task_CollectGPSData" name="Start collecting GPS data">
+      <incoming>Flow_1z063bt</incoming>
+      <outgoing>Flow_GPS_Sensor</outgoing>
+    </task>
+    <task id="Task_CollectSensorData" name="Collect sensor data (accelerometer, gyroscope)">
+      <incoming>Flow_GPS_Sensor</incoming>
+      <outgoing>Flow_Sensor_Wait</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveSaveRequest" name="Receive publish request">
+      <incoming>Flow_Weather_Wait</incoming>
+      <outgoing>Flow_0vkysto</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <startEvent id="Event_1ak4mig">
+      <outgoing>Flow_1z063bt</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0m4r3gl" />
+    </startEvent>
+    <sequenceFlow id="Flow_1z063bt" sourceRef="Event_1ak4mig" targetRef="Task_CollectGPSData" />
+    <intermediateCatchEvent id="Event_0slvkml">
+      <outgoing>Flow_10v8h7y</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_045l3r0" />
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_10v8h7y" sourceRef="Event_0slvkml" targetRef="Activity_0ki5d2q" />
+    <sequenceFlow id="Flow_02tgjhi" sourceRef="Activity_0ki5d2q" targetRef="Event_0am2qnc" />
+    <endEvent id="Event_0am2qnc">
+      <incoming>Flow_02tgjhi</incoming>
+    </endEvent>
+    <task id="Activity_0ki5d2q" name="Path deleted">
+      <incoming>Flow_10v8h7y</incoming>
+      <outgoing>Flow_02tgjhi</outgoing>
+    </task>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_TripRecording">
+      <bpmndi:BPMNShape id="Participant_RegisteredUser_di" bpmnElement="Participant_RegisteredUser" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1640" height="280" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_RU_di" bpmnElement="StartEvent_RU">
+        <dc:Bounds x="230" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="209" y="245" width="80" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StartRecording_di" bpmnElement="Task_StartRecording">
+        <dc:Bounds x="320" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_BikeTrip_di" bpmnElement="Task_BikeTrip">
+        <dc:Bounds x="470" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StopRecording_di" bpmnElement="Task_StopRecording">
+        <dc:Bounds x="620" y="180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SaveOrPublish_di" bpmnElement="Gateway_SaveOrPublish" isMarkerVisible="true">
+        <dc:Bounds x="770" y="195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="736" y="177" width="47" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveTripSaved_di" bpmnElement="Event_ReceiveTripSaved">
+        <dc:Bounds x="1190" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1210" y="176.5" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_RU_di" bpmnElement="EndEvent_RU">
+        <dc:Bounds x="1276" y="202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1269" y="245" width="50" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0e3niro_di" bpmnElement="Activity_0e3niro">
+        <dc:Bounds x="880" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitTripData_di" bpmnElement="Task_SubmitTripData">
+        <dc:Bounds x="1000" y="180" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0hvqty2_di" bpmnElement="Activity_0hvqty2">
+        <dc:Bounds x="830" y="260" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1djzamm_di" bpmnElement="Event_1djzamm">
+        <dc:Bounds x="1472" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_06pwy75_di" bpmnElement="Event_06pwy75">
+        <dc:Bounds x="1552" y="282" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Task1_di" bpmnElement="Flow_Start_Task1">
+        <di:waypoint x="266" y="220" />
+        <di:waypoint x="320" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task1_Task2_di" bpmnElement="Flow_Task1_Task2">
+        <di:waypoint x="420" y="220" />
+        <di:waypoint x="470" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task2_Task3_di" bpmnElement="Flow_Task2_Task3">
+        <di:waypoint x="570" y="220" />
+        <di:waypoint x="620" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task3_Gateway1_di" bpmnElement="Flow_Task3_Gateway1">
+        <di:waypoint x="720" y="220" />
+        <di:waypoint x="770" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway1_Publish_di" bpmnElement="Flow_Gateway1_Publish">
+        <di:waypoint x="820" y="220" />
+        <di:waypoint x="1000" y="220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="815" y="123" width="49" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task4_Wait_di" bpmnElement="Flow_Task4_Wait">
+        <di:waypoint x="1120" y="220" />
+        <di:waypoint x="1190" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Wait_End_di" bpmnElement="Flow_Wait_End">
+        <di:waypoint x="1226" y="220" />
+        <di:waypoint x="1276" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uq7eds_di" bpmnElement="Flow_1uq7eds">
+        <di:waypoint x="795" y="195" />
+        <di:waypoint x="795" y="150" />
+        <di:waypoint x="880" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fkmkvw_di" bpmnElement="Flow_1fkmkvw">
+        <di:waypoint x="980" y="150" />
+        <di:waypoint x="1208" y="150" />
+        <di:waypoint x="1208" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vv8ty5_di" bpmnElement="Flow_0vv8ty5">
+        <di:waypoint x="795" y="245" />
+        <di:waypoint x="795" y="300" />
+        <di:waypoint x="830" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kemoy1_di" bpmnElement="Flow_0kemoy1">
+        <di:waypoint x="1508" y="300" />
+        <di:waypoint x="1552" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lthuj8_di" bpmnElement="Flow_1lthuj8">
+        <di:waypoint x="930" y="300" />
+        <di:waypoint x="1472" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_BBPSystem_di" bpmnElement="Participant_BBPSystem" isHorizontal="true">
+        <dc:Bounds x="160" y="400" width="1640" height="500" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveStopTrip_di" bpmnElement="Event_ReceiveStopTrip">
+        <dc:Bounds x="652" y="622" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="635" y="665" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProcessTripData_di" bpmnElement="Task_ProcessTripData">
+        <dc:Bounds x="740" y="600" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_FetchWeatherData_di" bpmnElement="Task_FetchWeatherData">
+        <dc:Bounds x="910" y="600" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SavePersonalTrip_di" bpmnElement="Task_SavePersonalTrip">
+        <dc:Bounds x="1250" y="440" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PublishBikePath_di" bpmnElement="Task_PublishBikePath">
+        <dc:Bounds x="1250" y="560" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1420" y="495" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReturnSuccess_di" bpmnElement="Task_ReturnSuccess">
+        <dc:Bounds x="1520" y="480" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_BBP_di" bpmnElement="EndEvent_BBP">
+        <dc:Bounds x="1690" y="502" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1670" y="545" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1bt0kwn_di" bpmnElement="Event_1bt0kwn">
+        <dc:Bounds x="1156" y="442" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CollectGPSData_di" bpmnElement="Task_CollectGPSData">
+        <dc:Bounds x="410" y="480" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CollectSensorData_di" bpmnElement="Task_CollectSensorData">
+        <dc:Bounds x="560" y="480" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveSaveRequest_di" bpmnElement="Event_ReceiveSaveRequest">
+        <dc:Bounds x="1102" y="582" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1022" y="580" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ak4mig_di" bpmnElement="Event_1ak4mig">
+        <dc:Bounds x="352" y="502" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0slvkml_di" bpmnElement="Event_0slvkml">
+        <dc:Bounds x="1122" y="722" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0am2qnc_di" bpmnElement="Event_0am2qnc">
+        <dc:Bounds x="1690" y="722" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ki5d2q_di" bpmnElement="Activity_0ki5d2q">
+        <dc:Bounds x="1440" y="700" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_GPS_Sensor_di" bpmnElement="Flow_GPS_Sensor">
+        <di:waypoint x="510" y="520" />
+        <di:waypoint x="560" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Sensor_Wait_di" bpmnElement="Flow_Sensor_Wait">
+        <di:waypoint x="610" y="560" />
+        <di:waypoint x="610" y="590" />
+        <di:waypoint x="670" y="590" />
+        <di:waypoint x="670" y="622" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Stop_Process_di" bpmnElement="Flow_Stop_Process">
+        <di:waypoint x="688" y="640" />
+        <di:waypoint x="740" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Process_Weather_di" bpmnElement="Flow_Process_Weather">
+        <di:waypoint x="860" y="640" />
+        <di:waypoint x="910" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Weather_Wait_di" bpmnElement="Flow_Weather_Wait">
+        <di:waypoint x="1030" y="640" />
+        <di:waypoint x="1120" y="640" />
+        <di:waypoint x="1120" y="618" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Personal_Merge_di" bpmnElement="Flow_Personal_Merge">
+        <di:waypoint x="1370" y="480" />
+        <di:waypoint x="1395" y="480" />
+        <di:waypoint x="1395" y="520" />
+        <di:waypoint x="1420" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Publish_Merge_di" bpmnElement="Flow_Publish_Merge">
+        <di:waypoint x="1370" y="600" />
+        <di:waypoint x="1395" y="600" />
+        <di:waypoint x="1395" y="520" />
+        <di:waypoint x="1420" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge_Success_di" bpmnElement="Flow_Merge_Success">
+        <di:waypoint x="1470" y="520" />
+        <di:waypoint x="1520" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Success_End_di" bpmnElement="Flow_Success_End">
+        <di:waypoint x="1640" y="520" />
+        <di:waypoint x="1690" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0vkysto_di" bpmnElement="Flow_0vkysto">
+        <di:waypoint x="1138" y="600" />
+        <di:waypoint x="1250" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0frk7og_di" bpmnElement="Flow_0frk7og">
+        <di:waypoint x="1192" y="460" />
+        <di:waypoint x="1221" y="460" />
+        <di:waypoint x="1221" y="480" />
+        <di:waypoint x="1250" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1z063bt_di" bpmnElement="Flow_1z063bt">
+        <di:waypoint x="388" y="520" />
+        <di:waypoint x="410" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10v8h7y_di" bpmnElement="Flow_10v8h7y">
+        <di:waypoint x="1158" y="740" />
+        <di:waypoint x="1440" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_02tgjhi_di" bpmnElement="Flow_02tgjhi">
+        <di:waypoint x="1540" y="740" />
+        <di:waypoint x="1690" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_StopTrip_di" bpmnElement="MessageFlow_StopTrip">
+        <di:waypoint x="670" y="260" />
+        <di:waypoint x="670" y="622" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_SaveRequest_di" bpmnElement="MessageFlow_SaveRequest">
+        <di:waypoint x="1120" y="250" />
+        <di:waypoint x="1120" y="582" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_TripSaved_di" bpmnElement="MessageFlow_TripSaved">
+        <di:waypoint x="1580" y="480" />
+        <di:waypoint x="1580" y="370" />
+        <di:waypoint x="1208" y="370" />
+        <di:waypoint x="1208" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0b0v7v0_di" bpmnElement="Flow_0b0v7v0">
+        <di:waypoint x="950" y="190" />
+        <di:waypoint x="950" y="315" />
+        <di:waypoint x="1174" y="315" />
+        <di:waypoint x="1174" y="442" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_06r0frd_di" bpmnElement="Flow_06r0frd">
+        <di:waypoint x="370" y="260" />
+        <di:waypoint x="370" y="502" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_1ex9pqe_di" bpmnElement="TextAnnotation_1ex9pqe">
+        <dc:Bounds x="1130" y="480" width="100" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0g65b0n_di" bpmnElement="TextAnnotation_0g65b0n">
+        <dc:Bounds x="822" y="171" width="99.98921173762946" height="40.27617951668584" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_07uc0z6_di" bpmnElement="TextAnnotation_07uc0z6">
+        <dc:Bounds x="720" y="295" width="99.98921173762946" height="40.27617951668584" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1od1bcu_di" bpmnElement="Flow_1od1bcu">
+        <di:waypoint x="880" y="340" />
+        <di:waypoint x="880" y="740" />
+        <di:waypoint x="1122" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1j673oo_di" bpmnElement="Flow_1j673oo">
+        <di:waypoint x="1490" y="700" />
+        <di:waypoint x="1490" y="318" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0rte56w_di" bpmnElement="TextAnnotation_0rte56w">
+        <dc:Bounds x="1070" y="685" width="99.98921173762946" height="40.27617951668584" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0tb6rd4_di" bpmnElement="TextAnnotation_0tb6rd4">
+        <dc:Bounds x="1660" y="685" width="99.98921173762946" height="29.991369390103568" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_0rqx11o_di" bpmnElement="TextAnnotation_0rqx11o">
+        <dc:Bounds x="1580" y="245" width="99.98921173762946" height="29.991369390103568" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_03hs36y_di" bpmnElement="TextAnnotation_03hs36y">
+        <dc:Bounds x="1450" y="235" width="99.98921173762946" height="40.27617951668584" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_Weather" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.6.1">
+  <collaboration id="Collab_Weather">
+    <participant id="System" name="BBP System" processRef="Process_System" />
+    <participant id="User" name="Registered User" processRef="Process_User" />
+    <participant id="WeatherService" name="External Weather Service" processRef="Process_WeatherService" />
+    <messageFlow id="Flow_TripData" sourceRef="Activity_SendTripData" targetRef="Event_ReceiveTripData" />
+    <messageFlow id="Flow_WeatherRequest" sourceRef="Activity_RequestWeather" targetRef="Event_ReceiveWeatherRequest" />
+    <messageFlow id="Flow_WeatherResponse" sourceRef="Activity_ProvideWeather" targetRef="Event_ReceiveWeatherData" />
+    <messageFlow id="Flow_EnrichmentConfirm" sourceRef="Activity_ConfirmEnrichment" targetRef="Event_ReceiveConfirm" />
+    <textAnnotation id="TextAnnotation_1">
+      <text>User initiates trip recording</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_2">
+      <text>Trip data sent to system</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_3">
+      <text>Weather data available?</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_4">
+      <text>Yes - Enrich with weather</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_5">
+      <text>No - Store without weather</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_6">
+      <text>Weather service responds</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_7">
+      <text>Trip enriched and stored</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_0ii89gv">
+      <text>Trip enriched with weather data?</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_1gazh4x">
+      <text>No</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_05mlubk">
+      <text>Yes</text>
+    </textAnnotation>
+    <textAnnotation id="TextAnnotation_04jqs7c">
+      <text>RU want to see one of his trips</text>
+    </textAnnotation>
+  </collaboration>
+  <process id="Process_User" isExecutable="false">
+    <startEvent id="Event_Start">
+      <outgoing>Flow_1</outgoing>
+    </startEvent>
+    <task id="Activity_RecordTrip" name="Record Trip (Manual or Auto)">
+      <incoming>Flow_1</incoming>
+      <outgoing>Flow_2</outgoing>
+    </task>
+    <task id="Activity_SendTripData" name="Send Trip Data">
+      <incoming>Flow_2</incoming>
+      <outgoing>Flow_3</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveConfirm">
+      <incoming>Flow_3</incoming>
+      <outgoing>Flow_4</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1" />
+    </intermediateCatchEvent>
+    <task id="Activity_ViewEnrichedTrip" name="View Trip">
+      <incoming>Flow_4</incoming>
+      <outgoing>Flow_5</outgoing>
+    </task>
+    <endEvent id="Event_End">
+      <incoming>Flow_5</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_1" sourceRef="Event_Start" targetRef="Activity_RecordTrip" />
+    <sequenceFlow id="Flow_2" sourceRef="Activity_RecordTrip" targetRef="Activity_SendTripData" />
+    <sequenceFlow id="Flow_3" sourceRef="Activity_SendTripData" targetRef="Event_ReceiveConfirm" />
+    <sequenceFlow id="Flow_4" sourceRef="Event_ReceiveConfirm" targetRef="Activity_ViewEnrichedTrip" />
+    <sequenceFlow id="Flow_5" sourceRef="Activity_ViewEnrichedTrip" targetRef="Event_End" />
+  </process>
+  <process id="Process_System" isExecutable="false">
+    <intermediateCatchEvent id="Event_ReceiveTripData">
+      <outgoing>Flow_S1</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_2" />
+    </intermediateCatchEvent>
+    <task id="Activity_ValidateTrip" name="Validate Trip Data">
+      <incoming>Flow_S1</incoming>
+      <outgoing>Flow_S2</outgoing>
+    </task>
+    <endEvent id="Event_SystemEnd">
+      <incoming>Flow_S10</incoming>
+    </endEvent>
+    <task id="Activity_ConfirmEnrichment" name="Send Trip">
+      <incoming>Flow_S9</incoming>
+      <outgoing>Flow_S10</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge">
+      <incoming>Flow_S7</incoming>
+      <incoming>Flow_S8</incoming>
+      <outgoing>Flow_S9</outgoing>
+    </exclusiveGateway>
+    <task id="Activity_RequestWeather" name="Request Weather Data">
+      <incoming>Flow_S2</incoming>
+      <outgoing>Flow_S4</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveWeatherData">
+      <incoming>Flow_S4</incoming>
+      <outgoing>Flow_1hwf1uf</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_3" />
+    </intermediateCatchEvent>
+    <exclusiveGateway id="Gateway_0cmxftd">
+      <incoming>Flow_1hwf1uf</incoming>
+      <outgoing>Flow_0mom0iz</outgoing>
+      <outgoing>Flow_0q6k1w3</outgoing>
+    </exclusiveGateway>
+    <task id="Activity_StoreTripNoWeather" name="Store Trip without weather">
+      <incoming>Flow_0q6k1w3</incoming>
+      <outgoing>Flow_S8</outgoing>
+    </task>
+    <task id="Activity_EnrichTrip" name="Enrich trip with weather">
+      <incoming>Flow_0mom0iz</incoming>
+      <outgoing>Flow_S6</outgoing>
+    </task>
+    <task id="Activity_StoreTripWithWeather" name="Store Enriched Trip">
+      <incoming>Flow_S6</incoming>
+      <outgoing>Flow_S7</outgoing>
+    </task>
+    <sequenceFlow id="Flow_S1" sourceRef="Event_ReceiveTripData" targetRef="Activity_ValidateTrip" />
+    <sequenceFlow id="Flow_S2" sourceRef="Activity_ValidateTrip" targetRef="Activity_RequestWeather" />
+    <sequenceFlow id="Flow_S10" sourceRef="Activity_ConfirmEnrichment" targetRef="Event_SystemEnd" />
+    <sequenceFlow id="Flow_S9" sourceRef="Gateway_Merge" targetRef="Activity_ConfirmEnrichment" />
+    <sequenceFlow id="Flow_S7" sourceRef="Activity_StoreTripWithWeather" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_S8" sourceRef="Activity_StoreTripNoWeather" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_S4" sourceRef="Activity_RequestWeather" targetRef="Event_ReceiveWeatherData" />
+    <sequenceFlow id="Flow_1hwf1uf" sourceRef="Event_ReceiveWeatherData" targetRef="Gateway_0cmxftd" />
+    <sequenceFlow id="Flow_0mom0iz" sourceRef="Gateway_0cmxftd" targetRef="Activity_EnrichTrip" />
+    <sequenceFlow id="Flow_0q6k1w3" sourceRef="Gateway_0cmxftd" targetRef="Activity_StoreTripNoWeather" />
+    <sequenceFlow id="Flow_S6" sourceRef="Activity_EnrichTrip" targetRef="Activity_StoreTripWithWeather" />
+  </process>
+  <process id="Process_WeatherService" isExecutable="false">
+    <intermediateCatchEvent id="Event_ReceiveWeatherRequest">
+      <outgoing>Flow_W1</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_4" />
+    </intermediateCatchEvent>
+    <task id="Activity_CheckAvailability" name="Check Data Availability">
+      <incoming>Flow_W1</incoming>
+      <outgoing>Flow_W2</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_DataAvailable" name="Data available?">
+      <incoming>Flow_W2</incoming>
+      <outgoing>Flow_W3_Yes</outgoing>
+      <outgoing>Flow_W3_No</outgoing>
+    </exclusiveGateway>
+    <task id="Activity_FetchWeather" name="Fetch Weather Data (temp, rain, wind)">
+      <incoming>Flow_W3_Yes</incoming>
+      <outgoing>Flow_W4</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_ResponseMerge">
+      <incoming>Flow_W4</incoming>
+      <incoming>Flow_W3_No</incoming>
+      <outgoing>Flow_W6</outgoing>
+    </exclusiveGateway>
+    <task id="Activity_ProvideWeather" name="Send Weather Response">
+      <incoming>Flow_W6</incoming>
+      <outgoing>Flow_W7</outgoing>
+    </task>
+    <endEvent id="Event_WeatherEnd">
+      <incoming>Flow_W7</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_W1" sourceRef="Event_ReceiveWeatherRequest" targetRef="Activity_CheckAvailability" />
+    <sequenceFlow id="Flow_W2" sourceRef="Activity_CheckAvailability" targetRef="Gateway_DataAvailable" />
+    <sequenceFlow id="Flow_W3_Yes" name="Yes" sourceRef="Gateway_DataAvailable" targetRef="Activity_FetchWeather" />
+    <sequenceFlow id="Flow_W3_No" name="No" sourceRef="Gateway_DataAvailable" targetRef="Gateway_ResponseMerge" />
+    <sequenceFlow id="Flow_W4" sourceRef="Activity_FetchWeather" targetRef="Gateway_ResponseMerge" />
+    <sequenceFlow id="Flow_W6" sourceRef="Gateway_ResponseMerge" targetRef="Activity_ProvideWeather" />
+    <sequenceFlow id="Flow_W7" sourceRef="Activity_ProvideWeather" targetRef="Event_WeatherEnd" />
+  </process>
+  <bpmndi:BPMNDiagram id="Diagram_Weather">
+    <bpmndi:BPMNPlane id="Plane_Weather" bpmnElement="Collab_Weather">
+      <bpmndi:BPMNShape id="Lane_WeatherService_di" bpmnElement="WeatherService" isHorizontal="true">
+        <dc:Bounds x="150" y="630" width="1400" height="240" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveWeatherRequest_di" bpmnElement="Event_ReceiveWeatherRequest">
+        <dc:Bounds x="732" y="712" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_CheckAvailability_di" bpmnElement="Activity_CheckAvailability">
+        <dc:Bounds x="820" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_DataAvailable_di" bpmnElement="Gateway_DataAvailable" isMarkerVisible="true">
+        <dc:Bounds x="975" y="705" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="922" y="693" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_FetchWeather_di" bpmnElement="Activity_FetchWeather">
+        <dc:Bounds x="1080" y="650" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ResponseMerge_di" bpmnElement="Gateway_ResponseMerge" isMarkerVisible="true">
+        <dc:Bounds x="1235" y="705" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ProvideWeather_di" bpmnElement="Activity_ProvideWeather">
+        <dc:Bounds x="1330" y="690" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_WeatherEnd_di" bpmnElement="Event_WeatherEnd">
+        <dc:Bounds x="1482" y="712" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_W1_di" bpmnElement="Flow_W1">
+        <di:waypoint x="768" y="730" />
+        <di:waypoint x="820" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W2_di" bpmnElement="Flow_W2">
+        <di:waypoint x="920" y="730" />
+        <di:waypoint x="975" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W3_Yes_di" bpmnElement="Flow_W3_Yes">
+        <di:waypoint x="1000" y="705" />
+        <di:waypoint x="1000" y="690" />
+        <di:waypoint x="1080" y="690" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1021" y="673" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W3_No_di" bpmnElement="Flow_W3_No">
+        <di:waypoint x="1000" y="755" />
+        <di:waypoint x="1000" y="790" />
+        <di:waypoint x="1260" y="790" />
+        <di:waypoint x="1260" y="755" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1022" y="773" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W4_di" bpmnElement="Flow_W4">
+        <di:waypoint x="1180" y="690" />
+        <di:waypoint x="1260" y="690" />
+        <di:waypoint x="1260" y="705" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W6_di" bpmnElement="Flow_W6">
+        <di:waypoint x="1285" y="730" />
+        <di:waypoint x="1330" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_W7_di" bpmnElement="Flow_W7">
+        <di:waypoint x="1430" y="730" />
+        <di:waypoint x="1482" y="730" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Lane_User_di" bpmnElement="User" isHorizontal="true">
+        <dc:Bounds x="150" y="77" width="1400" height="180" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_Start_di" bpmnElement="Event_Start">
+        <dc:Bounds x="212" y="149" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_RecordTrip_di" bpmnElement="Activity_RecordTrip">
+        <dc:Bounds x="300" y="127" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_SendTripData_di" bpmnElement="Activity_SendTripData">
+        <dc:Bounds x="450" y="127" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveConfirm_di" bpmnElement="Event_ReceiveConfirm">
+        <dc:Bounds x="1132" y="149" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ViewEnrichedTrip_di" bpmnElement="Activity_ViewEnrichedTrip">
+        <dc:Bounds x="1220" y="127" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_End_di" bpmnElement="Event_End">
+        <dc:Bounds x="1372" y="149" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="248" y="167" />
+        <di:waypoint x="300" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="400" y="167" />
+        <di:waypoint x="450" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="550" y="167" />
+        <di:waypoint x="1132" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="1168" y="167" />
+        <di:waypoint x="1220" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="1320" y="167" />
+        <di:waypoint x="1372" y="167" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Lane_System_di" bpmnElement="System" isHorizontal="true">
+        <dc:Bounds x="150" y="271" width="1400" height="340" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveTripData_di" bpmnElement="Event_ReceiveTripData">
+        <dc:Bounds x="482" y="423" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ValidateTrip_di" bpmnElement="Activity_ValidateTrip">
+        <dc:Bounds x="570" y="401" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SystemEnd_di" bpmnElement="Event_SystemEnd">
+        <dc:Bounds x="1472" y="423" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_ConfirmEnrichment_di" bpmnElement="Activity_ConfirmEnrichment">
+        <dc:Bounds x="1340" y="401" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1245" y="416" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_RequestWeather_di" bpmnElement="Activity_RequestWeather">
+        <dc:Bounds x="720" y="401" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveWeatherData_di" bpmnElement="Event_ReceiveWeatherData">
+        <dc:Bounds x="882" y="423" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0cmxftd_di" bpmnElement="Gateway_0cmxftd" isMarkerVisible="true">
+        <dc:Bounds x="955" y="416" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_StoreTripNoWeather_di" bpmnElement="Activity_StoreTripNoWeather">
+        <dc:Bounds x="1030" y="300" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_EnrichTrip_di" bpmnElement="Activity_EnrichTrip">
+        <dc:Bounds x="1030" y="511" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_StoreTripWithWeather_di" bpmnElement="Activity_StoreTripWithWeather">
+        <dc:Bounds x="1220" y="511" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_S1_di" bpmnElement="Flow_S1">
+        <di:waypoint x="518" y="441" />
+        <di:waypoint x="570" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_di" bpmnElement="Flow_S2">
+        <di:waypoint x="670" y="441" />
+        <di:waypoint x="720" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S4_di" bpmnElement="Flow_S4">
+        <di:waypoint x="820" y="441" />
+        <di:waypoint x="882" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S6_di" bpmnElement="Flow_S6">
+        <di:waypoint x="1130" y="551" />
+        <di:waypoint x="1220" y="551" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S7_di" bpmnElement="Flow_S7">
+        <di:waypoint x="1270" y="511" />
+        <di:waypoint x="1270" y="466" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S8_di" bpmnElement="Flow_S8">
+        <di:waypoint x="1130" y="340" />
+        <di:waypoint x="1270" y="340" />
+        <di:waypoint x="1270" y="416" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S9_di" bpmnElement="Flow_S9">
+        <di:waypoint x="1295" y="441" />
+        <di:waypoint x="1340" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S10_di" bpmnElement="Flow_S10">
+        <di:waypoint x="1440" y="441" />
+        <di:waypoint x="1472" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mom0iz_di" bpmnElement="Flow_0mom0iz">
+        <di:waypoint x="980" y="466" />
+        <di:waypoint x="980" y="551" />
+        <di:waypoint x="1030" y="551" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0q6k1w3_di" bpmnElement="Flow_0q6k1w3">
+        <di:waypoint x="980" y="416" />
+        <di:waypoint x="980" y="360" />
+        <di:waypoint x="1030" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hwf1uf_di" bpmnElement="Flow_1hwf1uf">
+        <di:waypoint x="918" y="441" />
+        <di:waypoint x="955" y="441" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TripData_di" bpmnElement="Flow_TripData">
+        <di:waypoint x="500" y="207" />
+        <di:waypoint x="500" y="423" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WeatherRequest_di" bpmnElement="Flow_WeatherRequest">
+        <di:waypoint x="750" y="481" />
+        <di:waypoint x="750" y="712" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WeatherResponse_di" bpmnElement="Flow_WeatherResponse">
+        <di:waypoint x="1380" y="690" />
+        <di:waypoint x="1380" y="650" />
+        <di:waypoint x="900" y="650" />
+        <di:waypoint x="900" y="459" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_EnrichmentConfirm_di" bpmnElement="Flow_EnrichmentConfirm">
+        <di:waypoint x="1390" y="401" />
+        <di:waypoint x="1390" y="310" />
+        <di:waypoint x="1150" y="310" />
+        <di:waypoint x="1150" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0ii89gv_di" bpmnElement="TextAnnotation_0ii89gv">
+        <dc:Bounds x="1020" y="413" width="100" height="55" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_1gazh4x_di" bpmnElement="TextAnnotation_1gazh4x">
+        <dc:Bounds x="950" y="330" width="100" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_05mlubk_di" bpmnElement="TextAnnotation_05mlubk">
+        <dc:Bounds x="950" y="550" width="100" height="30" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="TextAnnotation_04jqs7c_di" bpmnElement="TextAnnotation_04jqs7c">
+        <dc:Bounds x="190" y="100" width="100" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
