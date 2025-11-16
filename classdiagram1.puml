@@ -1,0 +1,137 @@
+@startuml bbps
+title Best Bike Paths (BBP) - Class Diagram (User-centered)
+
+class User {
+
+  + login()
+  + logout()
+  + register()
+  + searchPaths(origin: Address, destination: Address)
+  + viewMap(origin: Address, destination: Address)
+}
+
+class RegisteredUser {
+  - userId: String
+  - password: string
+  - name: String
+  - email: String
+  + insertManually()
+  + publishPath()
+  + confirmObstacle()
+  + viewStatistics(): TripStatistics
+  + allowCollectingData(MobileDevice: device)
+}
+
+class MobileDevice{
+  - allowCollecting: boolean
+  + getGPSData(): Coordinate
+  + getAccelerometerData(SensorData : sensor) : float
+  + getGyroscopeData(SensorData : sensor) :float
+}
+
+class SensorData{
+  - accelleromenter: float
+  - gyroscope: float
+}
+
+class PathInfo {
+  - status: PathStatus
+  - origin: Address
+  - destination: Address
+  - confirmed: boolean
+  - collectionMode: InsertionMode
+  - streetNames: List<PathSegment>
+  + confirmPath()
+}
+
+
+class Trip {
+  - tripId: String
+  - startTime: DateTime
+  - endTime: DateTime
+  - distance: double
+  - avgSpeed: double
+  - obstacles: List<Obstacle>
+  - published: boolean
+  + calculateStatistics()
+}
+
+
+class BikePath {
+  - pathId: String
+  - name: String
+  - score: double
+  - isPublished: boolean
+  - segments: List<PathSegment>
+  + calculateScore(): double
+  + setPublished(published: boolean)
+}
+
+class PathSegment {
+  - segmentId: String
+  - streetName: String
+  - status: PathStatus
+  - obstacles: List<Obstacle>
+  + updateStatus(newStatus: PathStatus)
+}
+
+class Obstacle {
+  - obstacleId: String
+  - obstacleCoord: Coordinate
+  - type: ObstacleType
+  - confirmed: boolean
+  + confirm()
+  + reject()
+}
+
+class WeatherData {
+  - temperature: double
+  - windSpeed: double
+  - condition: String
+}
+
+class Coordinate {
+  - latitude: double
+  - longitude: double
+
+}
+
+enum PathStatus {
+  OPTIMAL
+  MEDIUM
+  SUFFICIENT
+  REQUIRES_MAINTENANCE
+}
+
+enum ObstacleType {
+  POTHOLE
+  DEBRIS
+  OTHER
+}
+
+enum InsertionMode{
+  MANUAL 
+  AUTOMATED
+}
+
+class Address {
+  - city: String
+  - street: String
+  - number: Int
+}
+
+
+User <|-- RegisteredUser
+RegisteredUser --> MobileDevice : uses >
+MobileDevice --> SensorData : collects >
+RegisteredUser "1" --> "*" PathInfo : inserts >
+BikePath --> PathInfo : describedBy >
+BikePath "1" --> "0..1" WeatherData : enrichedWith >
+RegisteredUser --> Trip : records >
+BikePath "1" --> "*" PathSegment : composedOf >
+PathSegment "1" --> "*" Obstacle
+User "1" --> "*" BikePath : views >
+
+
+
+@enduml

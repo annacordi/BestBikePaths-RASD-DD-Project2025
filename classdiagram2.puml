@@ -1,0 +1,175 @@
+@startuml bbp
+title Best Bike Paths 
+
+class User {
+  + register()
+  + searchPaths(origin: Address, destination: Address): List<BikePath>
+  + viewPathsOnMap(paths: List<BikePath>)
+}
+
+class RegisteredUser {
+  - userId: String
+  - email: String
+  - name: String
+  - passwordHash: String
+  + login()
+  + logout()
+  
+  ' Trigger di acquisizione
+  + startManualRecording()
+  + stopManualRecording(): AcquiredPathData
+  + enableAutomaticDetection()
+  + disableAutomaticDetection()
+  
+  ' Azioni su AcquiredPathData
+  + saveAsTripPersonal(acquired: AcquiredPathData): Trip
+  + reviewAndCorrectData(acquired: AcquiredPathData): PathInfo
+  + publishAsBikePath(info: PathInfo)
+  
+  ' Visualizzazione
+  + viewPersonalTrips(): List<Trip>
+  + viewTripStatistics(tripId: String): TripStatistics
+}
+
+User <|-- RegisteredUser
+
+class MobileDevice {
+  - deviceId: String
+  - sensorsEnabled: boolean
+  - autoDetectionEnabled: boolean
+  
+  ' Monitoraggio attività
+  + detectBikingActivity(): boolean
+  + startDataCollection()
+  + stopDataCollection(): AcquiredPathData
+  
+  ' Raccolta dati
+  + getGPSData(): Coordinate
+  + getAccelerometerData(): float[3]
+  + getGyroscopeData(): float[3]
+}
+
+class SensorData {
+  - accelerometer: float[3]
+  - gyroscope: float[3]
+  - timestamp: DateTime
+}
+
+RegisteredUser "1" --> "0..1" MobileDevice : uses
+MobileDevice --> SensorData : collects
+
+class AcquiredPathData {
+  - acquisitionId: String
+  - userId: String
+  - acquisitionMode: AcquisitionMode
+  - startTime: DateTime
+  - endTime: DateTime
+  - gpsTrace: List<Coordinate>
+  - detectedObstacles: List<Obstacle>
+  - inferredStreetNames: List<String>
+  - suggestedOrigin: Address
+  - suggestedDestination: Address
+}
+
+enum AcquisitionMode {
+  MANUAL_RECORDING
+  AUTOMATIC_DETECTION
+}
+
+MobileDevice ..> AcquiredPathData : <<produces>>
+RegisteredUser "1" --> "*" AcquiredPathData : reviews
+
+class Trip {
+  - tripId: String
+  - userId: String
+  - startTime: DateTime
+  - endTime: DateTime
+  - distance: double
+  - avgSpeed: double
+  - routeCoordinates: List<Coordinate>
+  + calculateStatistics(): TripStatistics
+}
+class TripStatistics {
+  - totalDistance: double
+  - averageSpeed: double
+  - duration: Duration
+  - maxSpeed: double
+  - elevationGain: double
+}
+class WeatherData {
+  - temperature: double
+  - windSpeed: double
+  - condition: String
+  - timestamp: DateTime
+}
+AcquiredPathData ..> Trip : <<can be saved as>>
+RegisteredUser "1" --> "*" Trip : records
+Trip "1" --> "0..1" WeatherData : enrichedWith
+Trip --> TripStatistics : generates
+
+class PathInfo {
+  - pathInfoId: String
+  - ownerId: String
+  - creationTime: DateTime
+  - isPublished: boolean
+  - origin: Address
+  - destination: Address
+  + publish()
+}
+class PathSegment {
+  - segmentId: String
+  - streetName: String
+  - status: PathStatus
+  + updateStatus(newStatus: PathStatus)
+}
+class Obstacle {
+  - obstacleId: String
+  - location: Coordinate
+  - type: ObstacleType
+  - confirmed: boolean
+  - reportedAt: DateTime
+  + confirm()
+  + reject()
+}
+enum PathStatus {
+  OPTIMAL
+  MEDIUM
+  SUFFICIENT
+  REQUIRES_MAINTENANCE
+}
+enum ObstacleType {
+  POTHOLE
+  DEBRIS
+  CONSTRUCTION
+  OTHER
+}
+AcquiredPathData ..> PathInfo : <<reviewed and corrected to>>
+RegisteredUser "1" --> "*" PathInfo : creates
+PathInfo "1" --> "1..*" PathSegment : composedOf
+PathSegment "1" --> "*" Obstacle : contains
+class BikePath {
+  - bikePathId: String
+  - origin: Address
+  - destination: Address
+  - score: double
+  - contributorId: String
+  - lastUpdate: DateTime
+  + calculateScore(): double
+}
+PathInfo "1" -- "0..1" BikePath : publishedAs
+BikePath "1" --> "1..*" PathSegment : displays
+User "1" --> "*" BikePath : views
+
+class Coordinate {
+  - latitude: double
+  - longitude: double
+  + distanceTo(other: Coordinate): double
+}
+class Address {
+  - street: String
+  - city: String
+  - postalCode: String
+  + toCoordinate(): Coordinate
+}
+@enduml
+
