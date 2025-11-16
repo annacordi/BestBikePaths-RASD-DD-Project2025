@@ -1,0 +1,390 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.6.1">
+  <collaboration id="Collab_TripReview">
+    <participant id="System" name="BBP System" processRef="Process_System" />
+    <participant id="User" name="Registered User" processRef="Process_User" />
+    <messageFlow id="Flow_ObstacleToUser" sourceRef="Task_SendObstacle" targetRef="Event_ReceiveObstacle" />
+    <messageFlow id="Flow_ConfirmToSystem" sourceRef="Task_ConfirmObstacle" targetRef="Event_ReceiveDecision" />
+    <messageFlow id="Flow_FinalConfirm" sourceRef="Task_SaveTrip" targetRef="Event_FinalConfirm" />
+    <messageFlow id="Flow_1wgoorp" sourceRef="Task_SendTripData" targetRef="Event_170v1zb" />
+    <messageFlow id="Flow_1l274g6" sourceRef="Task_RejectObstacle" targetRef="Event_ReceiveDecision" />
+    <textAnnotation id="TextAnnotation_0kt67ch">
+      <text>Automatically recorded trip</text>
+    </textAnnotation>
+  </collaboration>
+  <process id="Process_System" isExecutable="false">
+    <startEvent id="Start_System">
+      <outgoing>Flow_S1</outgoing>
+    </startEvent>
+    <task id="Task_SendTripData" name="Send trip details">
+      <incoming>Flow_S1</incoming>
+      <outgoing>Flow_S2</outgoing>
+    </task>
+    <task id="Task_PrepareObstacleList" name="Prepare obstacle list">
+      <incoming>Flow_S2</incoming>
+      <outgoing>Flow_S3</outgoing>
+    </task>
+    <task id="Task_SendObstacle" name="Send obstacle with position and type">
+      <incoming>Flow_S3</incoming>
+      <incoming>Flow_S_Loop</incoming>
+      <outgoing>Flow_S4</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveDecision">
+      <incoming>Flow_S4</incoming>
+      <outgoing>Flow_S5</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1" />
+    </intermediateCatchEvent>
+    <exclusiveGateway id="Gateway_Confirmed">
+      <incoming>Flow_S5</incoming>
+      <outgoing>Flow_Confirmed</outgoing>
+      <outgoing>Flow_Rejected</outgoing>
+    </exclusiveGateway>
+    <task id="Task_StoreObstacle" name="Store confirmed obstacle">
+      <incoming>Flow_Confirmed</incoming>
+      <outgoing>Flow_S6</outgoing>
+    </task>
+    <task id="Task_DiscardObstacle" name="Discard rejected obstacle">
+      <incoming>Flow_Rejected</incoming>
+      <outgoing>Flow_S7</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge1">
+      <incoming>Flow_S6</incoming>
+      <incoming>Flow_S7</incoming>
+      <outgoing>Flow_S8</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="Gateway_MoreObstacles">
+      <incoming>Flow_S8</incoming>
+      <outgoing>Flow_S_Loop</outgoing>
+      <outgoing>Flow_S9</outgoing>
+    </exclusiveGateway>
+    <task id="Task_SaveTrip" name="Save trip with confirmed obstacles">
+      <incoming>Flow_S9</incoming>
+      <outgoing>Flow_S10</outgoing>
+    </task>
+    <endEvent id="End_System">
+      <incoming>Flow_S10</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_S1" sourceRef="Start_System" targetRef="Task_SendTripData" />
+    <sequenceFlow id="Flow_S2" sourceRef="Task_SendTripData" targetRef="Task_PrepareObstacleList" />
+    <sequenceFlow id="Flow_S3" sourceRef="Task_PrepareObstacleList" targetRef="Task_SendObstacle" />
+    <sequenceFlow id="Flow_S4" sourceRef="Task_SendObstacle" targetRef="Event_ReceiveDecision" />
+    <sequenceFlow id="Flow_S5" sourceRef="Event_ReceiveDecision" targetRef="Gateway_Confirmed" />
+    <sequenceFlow id="Flow_Confirmed" name="Confirmed" sourceRef="Gateway_Confirmed" targetRef="Task_StoreObstacle" />
+    <sequenceFlow id="Flow_Rejected" name="Rejected" sourceRef="Gateway_Confirmed" targetRef="Task_DiscardObstacle" />
+    <sequenceFlow id="Flow_S6" sourceRef="Task_StoreObstacle" targetRef="Gateway_Merge1" />
+    <sequenceFlow id="Flow_S7" sourceRef="Task_DiscardObstacle" targetRef="Gateway_Merge1" />
+    <sequenceFlow id="Flow_S8" sourceRef="Gateway_Merge1" targetRef="Gateway_MoreObstacles" />
+    <sequenceFlow id="Flow_S_Loop" name="More obstacles" sourceRef="Gateway_MoreObstacles" targetRef="Task_SendObstacle" />
+    <sequenceFlow id="Flow_S9" name="All reviewed" sourceRef="Gateway_MoreObstacles" targetRef="Task_SaveTrip" />
+    <sequenceFlow id="Flow_S10" sourceRef="Task_SaveTrip" targetRef="End_System" />
+  </process>
+  <process id="Process_User" isExecutable="false">
+    <task id="Task_ViewTrip" name="View trip details">
+      <incoming>Flow_0m8bj8y</incoming>
+      <outgoing>Flow_U3</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveObstacle">
+      <incoming>Flow_U3</incoming>
+      <incoming>Flow_U_Loop</incoming>
+      <outgoing>Flow_U4</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_4" />
+    </intermediateCatchEvent>
+    <task id="Task_ReviewObstacle" name="Review obstacle position and type">
+      <incoming>Flow_U4</incoming>
+      <outgoing>Flow_U5</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_UserDecision">
+      <incoming>Flow_U5</incoming>
+      <outgoing>Flow_U_Confirm</outgoing>
+      <outgoing>Flow_U_Reject</outgoing>
+    </exclusiveGateway>
+    <task id="Task_RejectObstacle" name="Reject obstacle">
+      <incoming>Flow_U_Reject</incoming>
+      <outgoing>Flow_U7</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge2">
+      <incoming>Flow_U6</incoming>
+      <incoming>Flow_U7</incoming>
+      <outgoing>Flow_U8</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="Gateway_Continue">
+      <incoming>Flow_U8</incoming>
+      <outgoing>Flow_U_Loop</outgoing>
+      <outgoing>Flow_U9</outgoing>
+    </exclusiveGateway>
+    <intermediateCatchEvent id="Event_FinalConfirm">
+      <incoming>Flow_U9</incoming>
+      <outgoing>Flow_U10</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_5" />
+    </intermediateCatchEvent>
+    <endEvent id="End_User">
+      <incoming>Flow_U10</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_U3" sourceRef="Task_ViewTrip" targetRef="Event_ReceiveObstacle" />
+    <sequenceFlow id="Flow_U4" sourceRef="Event_ReceiveObstacle" targetRef="Task_ReviewObstacle" />
+    <sequenceFlow id="Flow_U5" sourceRef="Task_ReviewObstacle" targetRef="Gateway_UserDecision" />
+    <sequenceFlow id="Flow_U_Confirm" name="Confirm" sourceRef="Gateway_UserDecision" targetRef="Task_ConfirmObstacle" />
+    <sequenceFlow id="Flow_U_Reject" name="Reject" sourceRef="Gateway_UserDecision" targetRef="Task_RejectObstacle" />
+    <sequenceFlow id="Flow_U6" sourceRef="Task_ConfirmObstacle" targetRef="Gateway_Merge2" />
+    <sequenceFlow id="Flow_U7" sourceRef="Task_RejectObstacle" targetRef="Gateway_Merge2" />
+    <sequenceFlow id="Flow_U8" sourceRef="Gateway_Merge2" targetRef="Gateway_Continue" />
+    <sequenceFlow id="Flow_U_Loop" name="Next obstacle" sourceRef="Gateway_Continue" targetRef="Event_ReceiveObstacle" />
+    <sequenceFlow id="Flow_U9" name="Finish" sourceRef="Gateway_Continue" targetRef="Event_FinalConfirm" />
+    <sequenceFlow id="Flow_U10" sourceRef="Event_FinalConfirm" targetRef="End_User" />
+    <startEvent id="Event_170v1zb">
+      <outgoing>Flow_0m8bj8y</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_13jbt2q" />
+    </startEvent>
+    <sequenceFlow id="Flow_0m8bj8y" sourceRef="Event_170v1zb" targetRef="Task_ViewTrip" />
+    <task id="Task_ConfirmObstacle" name="Confirm obstacle">
+      <incoming>Flow_U_Confirm</incoming>
+      <outgoing>Flow_U6</outgoing>
+    </task>
+  </process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collab_TripReview">
+      <bpmndi:BPMNShape id="System_di" bpmnElement="System" isHorizontal="true">
+        <dc:Bounds x="160" y="360" width="1600" height="300" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_System_di" bpmnElement="Start_System">
+        <dc:Bounds x="222" y="487" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendTripData_di" bpmnElement="Task_SendTripData">
+        <dc:Bounds x="290" y="465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_PrepareObstacleList_di" bpmnElement="Task_PrepareObstacleList">
+        <dc:Bounds x="420" y="465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendObstacle_di" bpmnElement="Task_SendObstacle">
+        <dc:Bounds x="550" y="465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveDecision_di" bpmnElement="Event_ReceiveDecision">
+        <dc:Bounds x="712" y="487" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Confirmed_di" bpmnElement="Gateway_Confirmed" isMarkerVisible="true">
+        <dc:Bounds x="815" y="480" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_StoreObstacle_di" bpmnElement="Task_StoreObstacle">
+        <dc:Bounds x="930" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_DiscardObstacle_di" bpmnElement="Task_DiscardObstacle">
+        <dc:Bounds x="930" y="540" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge1_di" bpmnElement="Gateway_Merge1" isMarkerVisible="true">
+        <dc:Bounds x="1095" y="480" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_MoreObstacles_di" bpmnElement="Gateway_MoreObstacles" isMarkerVisible="true">
+        <dc:Bounds x="1205" y="480" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SaveTrip_di" bpmnElement="Task_SaveTrip">
+        <dc:Bounds x="1390" y="465" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_System_di" bpmnElement="End_System">
+        <dc:Bounds x="1662" y="487" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_S1_di" bpmnElement="Flow_S1">
+        <di:waypoint x="258" y="505" />
+        <di:waypoint x="290" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S2_di" bpmnElement="Flow_S2">
+        <di:waypoint x="390" y="505" />
+        <di:waypoint x="420" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S3_di" bpmnElement="Flow_S3">
+        <di:waypoint x="520" y="505" />
+        <di:waypoint x="550" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S4_di" bpmnElement="Flow_S4">
+        <di:waypoint x="650" y="505" />
+        <di:waypoint x="712" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S5_di" bpmnElement="Flow_S5">
+        <di:waypoint x="748" y="505" />
+        <di:waypoint x="815" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Confirmed_di" bpmnElement="Flow_Confirmed">
+        <di:waypoint x="840" y="480" />
+        <di:waypoint x="840" y="450" />
+        <di:waypoint x="930" y="450" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="848" y="433" width="53" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Rejected_di" bpmnElement="Flow_Rejected">
+        <di:waypoint x="840" y="530" />
+        <di:waypoint x="840" y="580" />
+        <di:waypoint x="930" y="580" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="852" y="563" width="43" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S6_di" bpmnElement="Flow_S6">
+        <di:waypoint x="1030" y="450" />
+        <di:waypoint x="1120" y="450" />
+        <di:waypoint x="1120" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S7_di" bpmnElement="Flow_S7">
+        <di:waypoint x="1030" y="580" />
+        <di:waypoint x="1120" y="580" />
+        <di:waypoint x="1120" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S8_di" bpmnElement="Flow_S8">
+        <di:waypoint x="1145" y="505" />
+        <di:waypoint x="1205" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S_Loop_di" bpmnElement="Flow_S_Loop">
+        <di:waypoint x="1230" y="530" />
+        <di:waypoint x="1230" y="630" />
+        <di:waypoint x="600" y="630" />
+        <di:waypoint x="600" y="545" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1142" y="603" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S9_di" bpmnElement="Flow_S9">
+        <di:waypoint x="1255" y="505" />
+        <di:waypoint x="1390" y="505" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1290" y="487" width="61" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_S10_di" bpmnElement="Flow_S10">
+        <di:waypoint x="1490" y="505" />
+        <di:waypoint x="1662" y="505" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="User_di" bpmnElement="User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1600" height="250" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ViewTrip_di" bpmnElement="Task_ViewTrip">
+        <dc:Bounds x="420" y="165" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveObstacle_di" bpmnElement="Event_ReceiveObstacle">
+        <dc:Bounds x="582" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewObstacle_di" bpmnElement="Task_ReviewObstacle">
+        <dc:Bounds x="680" y="165" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_UserDecision_di" bpmnElement="Gateway_UserDecision" isMarkerVisible="true">
+        <dc:Bounds x="845" y="180" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ConfirmObstacle_di" bpmnElement="Task_ConfirmObstacle">
+        <dc:Bounds x="960" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RejectObstacle_di" bpmnElement="Task_RejectObstacle">
+        <dc:Bounds x="960" y="230" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge2_di" bpmnElement="Gateway_Merge2" isMarkerVisible="true">
+        <dc:Bounds x="1125" y="180" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Continue_di" bpmnElement="Gateway_Continue" isMarkerVisible="true">
+        <dc:Bounds x="1235" y="180" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_FinalConfirm_di" bpmnElement="Event_FinalConfirm">
+        <dc:Bounds x="1542" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_User_di" bpmnElement="End_User">
+        <dc:Bounds x="1662" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_170v1zb_di" bpmnElement="Event_170v1zb">
+        <dc:Bounds x="322" y="187" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_U3_di" bpmnElement="Flow_U3">
+        <di:waypoint x="520" y="205" />
+        <di:waypoint x="582" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U4_di" bpmnElement="Flow_U4">
+        <di:waypoint x="618" y="205" />
+        <di:waypoint x="680" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U5_di" bpmnElement="Flow_U5">
+        <di:waypoint x="780" y="205" />
+        <di:waypoint x="845" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U_Confirm_di" bpmnElement="Flow_U_Confirm">
+        <di:waypoint x="870" y="180" />
+        <di:waypoint x="870" y="160" />
+        <di:waypoint x="960" y="160" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="886" y="143" width="39" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U_Reject_di" bpmnElement="Flow_U_Reject">
+        <di:waypoint x="870" y="230" />
+        <di:waypoint x="870" y="270" />
+        <di:waypoint x="960" y="270" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="253" width="33" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U6_di" bpmnElement="Flow_U6">
+        <di:waypoint x="1060" y="160" />
+        <di:waypoint x="1150" y="160" />
+        <di:waypoint x="1150" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U7_di" bpmnElement="Flow_U7">
+        <di:waypoint x="1060" y="270" />
+        <di:waypoint x="1150" y="270" />
+        <di:waypoint x="1150" y="230" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U8_di" bpmnElement="Flow_U8">
+        <di:waypoint x="1175" y="205" />
+        <di:waypoint x="1235" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U_Loop_di" bpmnElement="Flow_U_Loop">
+        <di:waypoint x="1260" y="180" />
+        <di:waypoint x="1260" y="110" />
+        <di:waypoint x="600" y="110" />
+        <di:waypoint x="600" y="187" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1176" y="93" width="67" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U9_di" bpmnElement="Flow_U9">
+        <di:waypoint x="1285" y="205" />
+        <di:waypoint x="1542" y="205" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1393" y="187" width="31" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U10_di" bpmnElement="Flow_U10">
+        <di:waypoint x="1578" y="205" />
+        <di:waypoint x="1662" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0m8bj8y_di" bpmnElement="Flow_0m8bj8y">
+        <di:waypoint x="358" y="205" />
+        <di:waypoint x="420" y="205" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ObstacleToUser_di" bpmnElement="Flow_ObstacleToUser">
+        <di:waypoint x="600" y="465" />
+        <di:waypoint x="600" y="223" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ConfirmToSystem_di" bpmnElement="Flow_ConfirmToSystem">
+        <di:waypoint x="970" y="200" />
+        <di:waypoint x="930" y="200" />
+        <di:waypoint x="930" y="344" />
+        <di:waypoint x="730" y="344" />
+        <di:waypoint x="730" y="487" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FinalConfirm_di" bpmnElement="Flow_FinalConfirm">
+        <di:waypoint x="1440" y="465" />
+        <di:waypoint x="1440" y="340" />
+        <di:waypoint x="1560" y="340" />
+        <di:waypoint x="1560" y="223" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wgoorp_di" bpmnElement="Flow_1wgoorp">
+        <di:waypoint x="340" y="465" />
+        <di:waypoint x="340" y="223" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_0kt67ch_di" bpmnElement="TextAnnotation_0kt67ch">
+        <dc:Bounds x="210" y="440" width="100" height="41" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1l274g6_di" bpmnElement="Flow_1l274g6">
+        <di:waypoint x="1010" y="310" />
+        <di:waypoint x="1010" y="399" />
+        <di:waypoint x="730" y="399" />
+        <di:waypoint x="730" y="487" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
