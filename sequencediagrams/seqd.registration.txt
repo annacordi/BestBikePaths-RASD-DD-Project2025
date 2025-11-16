@@ -1,0 +1,56 @@
+@startuml Registration Sequence Diagram
+
+actor User
+participant "Registration\nPage" as RegPage
+participant "Validation\nService" as Validation
+participant "User\nService" as UserService
+database "Database" as DB
+participant "Email\nService" as Email
+
+User -> RegPage: Enter registration data
+activate RegPage
+
+RegPage -> Validation: Validate input data
+activate Validation
+
+alt Invalid data
+    Validation --> RegPage: Return validation errors
+    RegPage --> User: Show error messages
+else Valid data
+    Validation --> RegPage: Data valid
+    deactivate Validation
+    
+    RegPage -> UserService: Create user account
+    activate UserService
+    
+    UserService -> DB: Check if email exists
+    activate DB
+    
+    alt Email already exists
+        DB --> UserService: Email found
+        deactivate DB
+        UserService --> RegPage: Email already registered
+        RegPage --> User: Show error message
+    else Email not exists
+        DB --> UserService: Email available
+        deactivate DB
+        
+        UserService -> DB: Save user data
+        activate DB
+        DB --> UserService: User saved
+        deactivate DB
+        
+        UserService -> Email: Send verification email
+        activate Email
+        Email --> UserService: Email sent
+        deactivate Email
+        
+        UserService --> RegPage: Registration successful
+        deactivate UserService
+        
+        RegPage --> User: Show success message\n(Check email)
+        deactivate RegPage
+    end
+end
+
+@enduml
