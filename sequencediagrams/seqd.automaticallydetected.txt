@@ -1,0 +1,104 @@
+@startuml
+title Automated Path Detection
+
+actor "Registered User" as User
+participant "BBP Mobile App" as App
+participant "Motion Detection\nService" as MotionService
+participant "GPS Tracking\nService" as GPSService
+participant "Path Reconstruction\nService" as PathService
+participant "Obstacle Detection\nService" as ObstacleService
+participant "User Confirmation\nInterface" as ConfirmUI
+participant "Path Storage\nService" as StorageService
+participant "Database" as DB
+
+User -> App: Start automated tracking
+activate App
+
+App -> MotionService: startSpeedMonitoring()
+activate MotionService
+
+MotionService -> MotionService: detectUserSpeed()
+
+alt Speed indicates biking
+    MotionService --> App: Biking detected
+    
+    App -> GPSService: startGPSTracking()
+    activate GPSService
+    
+    App -> ObstacleService: startSensorMonitoring()
+    activate ObstacleService
+    
+    loop While biking
+        GPSService -> GPSService: collectGPSCoordinates()
+        GPSService --> App: GPS data points
+        
+        ObstacleService -> ObstacleService: readAccelerometerData()
+        ObstacleService -> ObstacleService: readGyroscopeData()
+        ObstacleService -> ObstacleService: detectSignificantMovement()
+        
+        alt Significant movement detected
+            ObstacleService --> App: Potential obstacle detected (location, type)
+        end
+    end
+    
+    User -> App: Stop tracking
+    
+    App -> GPSService: stopGPSTracking()
+    deactivate GPSService
+    
+    App -> ObstacleService: stopSensorMonitoring()
+    deactivate ObstacleService
+    
+    App -> PathService: reconstructPath(gpsDataPoints)
+    activate PathService
+    
+    PathService -> PathService: analyzeGPSData()
+    PathService -> PathService: identifyStreets()
+    PathService -> PathService: buildPathRoute()
+    
+    PathService --> App: ReconstructedPath
+    deactivate PathService
+    
+    App -> ConfirmUI: displayPathForConfirmation(path, detectedObstacles)
+    activate ConfirmUI
+    
+    ConfirmUI --> User: Show path and obstacles for review
+    
+    User -> ConfirmUI: Confirm/Correct path data
+    User -> ConfirmUI: Confirm/Remove false positive obstacles
+    User -> ConfirmUI: Set path status (optimal, medium, etc.)
+    User -> ConfirmUI: Choose to make publishable (yes/no)
+    
+    ConfirmUI --> App: ConfirmedPathData
+    deactivate ConfirmUI
+    
+    App -> StorageService: savePathInformation(confirmedData)
+    activate StorageService
+    
+    StorageService -> DB: storePathData(pathInfo, obstacles, status)
+    activate DB
+    
+    alt Save successful
+        DB --> StorageService: Success
+        deactivate DB
+        StorageService --> App: Path saved successfully
+        deactivate StorageService
+        App --> User: Display success message
+        
+    else Save failed
+        DB --> StorageService: Error
+        deactivate DB
+        StorageService --> App: Save error
+        deactivate StorageService
+        App --> User: Display error message
+    end
+    
+else Speed too low
+    MotionService --> App: Not biking (speed too low)
+    deactivate MotionService
+    App --> User: Display "Start biking to begin tracking"
+end
+
+deactivate App
+
+@enduml

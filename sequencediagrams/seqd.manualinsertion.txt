@@ -1,0 +1,90 @@
+@startuml
+title Manual Path Insertion
+
+actor "Registered User" as User
+participant "BBP System" as BBP
+participant "Path Entry\nInterface" as EntryUI
+participant "Validation\nService" as ValidationService
+participant "Street\nVerification Service" as StreetService
+participant "Path Storage\nService" as StorageService
+participant "Database" as DB
+
+User -> BBP: Access manual path insertion
+activate BBP
+
+BBP -> EntryUI: displayPathEntryForm()
+activate EntryUI
+
+EntryUI --> User: Show path entry form
+
+User -> EntryUI: Enter path name
+User -> EntryUI: Enter street names in sequence
+User -> EntryUI: Set path status (optimal, medium, sufficient, requires maintenance)
+User -> EntryUI: Add obstacle information (potholes, etc.) with locations
+User -> EntryUI: Choose to make publishable (yes/no)
+User -> EntryUI: Submit path data
+
+EntryUI -> ValidationService: validatePathData(pathInfo)
+activate ValidationService
+
+ValidationService -> ValidationService: checkRequiredFields()
+ValidationService -> ValidationService: validateStatusValue()
+ValidationService -> ValidationService: checkDataFormat()
+
+alt Data is valid
+    ValidationService --> EntryUI: Validation successful
+    deactivate ValidationService
+    
+    EntryUI -> StreetService: verifyStreets(streetNames)
+    activate StreetService
+    
+    StreetService -> StreetService: checkStreetExistence()
+    StreetService -> StreetService: validateStreetSequence()
+    
+    alt Streets are valid
+        StreetService --> EntryUI: Streets verified
+        deactivate StreetService
+        
+        EntryUI --> BBP: PathData confirmed
+        deactivate EntryUI
+        
+        BBP -> StorageService: savePathInformation(pathData)
+        activate StorageService
+        
+        StorageService -> DB: storePathData(name, streets, status, obstacles, publishable)
+        activate DB
+        
+        alt Save successful
+            DB --> StorageService: Success
+            deactivate DB
+            StorageService --> BBP: Path saved successfully
+            deactivate StorageService
+            BBP --> User: Display success message
+            
+        else Save failed
+            DB --> StorageService: Database error
+            deactivate DB
+            StorageService --> BBP: Save error
+            deactivate StorageService
+            BBP --> User: Display error message, suggest retry
+        end
+        
+    else Streets not found or invalid sequence
+        StreetService --> EntryUI: Street verification failed (invalid streets)
+        deactivate StreetService
+        EntryUI --> BBP: Validation error
+        deactivate EntryUI
+        BBP --> User: Display error message with invalid street names
+    end
+    
+else Data is invalid
+    ValidationService --> EntryUI: Validation failed (missing/incorrect fields)
+    deactivate ValidationService
+    EntryUI --> BBP: Validation error
+    deactivate EntryUI
+    BBP --> User: Display error messages, prompt to correct input
+end
+
+deactivate BBP
+
+@enduml

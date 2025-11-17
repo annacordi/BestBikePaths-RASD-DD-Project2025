@@ -1,0 +1,57 @@
+@startuml
+title Search and Visualize Bike Path on Map
+
+actor User
+participant "BBP System" as BBP
+participant "Path Search\nService" as SearchService
+participant "Path Scoring\nService" as ScoringService
+participant "Database" as DB
+participant "Map\nVisualization" as MapViz
+
+User -> BBP: Specify origin and destination
+activate BBP
+
+BBP -> SearchService: searchPaths(origin, destination)
+activate SearchService
+
+SearchService -> DB: queryAvailablePaths(origin, destination)
+activate DB
+DB --> SearchService: List<BikePathData>
+deactivate DB
+
+SearchService --> BBP: List<BikePath>
+deactivate SearchService
+
+alt Multiple paths found
+    BBP -> ScoringService: calculateScores(List<BikePath>)
+    activate ScoringService
+    
+    loop For each path
+        ScoringService -> ScoringService: evaluatePathStatus()
+        ScoringService -> ScoringService: evaluatePathEffectiveness(origin, destination)
+        ScoringService -> ScoringService: computeScore()
+    end
+    
+    ScoringService --> BBP: List<ScoredBikePath>
+    deactivate ScoringService
+    
+    BBP -> BBP: sortPathsByScore()
+    
+    BBP -> MapViz: visualizeMultiplePaths(sortedPaths)
+    activate MapViz
+    MapViz --> User: Display map with ranked paths
+    deactivate MapViz
+    
+else Single path found
+    BBP -> MapViz: visualizeSinglePath(bikePath)
+    activate MapViz
+    MapViz --> User: Display map with path
+    deactivate MapViz
+    
+else No paths found
+    BBP --> User: Display "No paths available" message
+end
+
+deactivate BBP
+
+@enduml
