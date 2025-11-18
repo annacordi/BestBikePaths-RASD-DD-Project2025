@@ -1,0 +1,95 @@
+@startuml
+title Review and Publish Automatically Detected Path - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+note over RU: System detected cycling activity\nand sent notification
+
+RU -> BBP: tapNotification
+
+BBP -> BBP: retrieveAutomaticallyCollectedData
+BBP -> RU: displaySummaryScreen(distance, duration, obstacles)
+BBP -> RU: displayOptions(saveAsTrip, reviewAndPublish, discard)
+
+RU -> BBP: selectReviewAndPublish
+
+BBP -> RU: displayReviewScreen
+BBP -> RU: displayRouteOnMap(gpsTrace)
+BBP -> RU: displaySuggestedAddresses(origin, destination)
+BBP -> RU: displayStreetNames(streetList)
+BBP -> RU: displayDetectedObstacles(location, type, confidence)
+
+RU -> BBP: reviewOriginDestination
+opt User Modifies Addresses
+    RU -> BBP: modifyAddress(newOrigin, newDestination)
+    BBP -> BBP: updateAddresses
+end
+
+RU -> BBP: reviewStreetNames
+opt User Modifies Street Names
+    RU -> BBP: addStreetName(streetName)
+    RU -> BBP: removeStreetName(streetName)
+    RU -> BBP: correctStreetName(oldName, newName)
+    BBP -> BBP: updateStreetNames
+end
+
+RU -> BBP: reviewObstacles
+
+loop For Each Detected Obstacle
+    BBP -> RU: displayObstacle(location, type, confidence)
+    
+    alt User Confirms Obstacle
+        RU -> BBP: confirmObstacle(obstacleId)
+        BBP -> BBP: markObstacleAsConfirmed
+    else User Rejects Obstacle
+        RU -> BBP: rejectObstacle(obstacleId)
+        BBP -> BBP: removeObstacle
+    else User Modifies Obstacle
+        RU -> BBP: modifyObstacle(obstacleId, newPosition, newType)
+        BBP -> BBP: updateObstacle
+    end
+end
+
+RU -> BBP: assignPathStatus(status)
+BBP -> BBP: setPathStatus(status)
+
+RU -> BBP: confirmReviewedInformation
+
+BBP -> BBP: validateRequiredFields(origin, destination, streetNames, status)
+
+alt Validation Successful
+    BBP -> BBP: calculatePathScore(status, distance, confirmedObstacles)
+    BBP -> DB: storePublishablePath(pathData, score)
+    DB -> BBP: pathStored
+    
+    BBP -> DB: makePathVisibleToAllUsers(pathId)
+    DB -> BBP: pathPublished
+    
+    opt User Also Saved as Personal Trip
+        BBP -> DB: storeTripData(tripData)
+        DB -> BBP: tripSaved
+    end
+    
+    BBP -> RU: displayConfirmation("Path successfully published!")
+    
+else Validation Failed
+    BBP -> RU: displayError("Missing required fields. Please complete: ...")
+end
+
+alt Database Connection Error
+    BBP -> DB: storePublishablePath(pathData)
+    DB --> BBP: connectionError
+    BBP -> BBP: saveDataLocally(pathData)
+    BBP -> RU: displayError("Connection error. Data saved locally. Retry later?")
+    
+    opt User Wants to Retry
+        RU -> BBP: selectRetry
+        BBP -> DB: storePublishablePath(pathData)
+        DB -> BBP: pathStored
+        BBP -> RU: displayConfirmation("Path successfully published!")
+    end
+end
+
+@enduml
