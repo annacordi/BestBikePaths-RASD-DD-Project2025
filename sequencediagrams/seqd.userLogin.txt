@@ -1,0 +1,53 @@
+@startuml
+title User Login - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Authentication\nSystem" as Auth
+participant "Database" as DB
+
+RU -> BBP: selectLoginOption
+BBP -> RU: displayLoginForm
+
+RU -> BBP: submitCredentials(email, password)
+
+BBP -> BBP: validateFormat(email, password)
+
+alt Valid Format
+    BBP -> Auth: authenticateUser(email, password)
+    Auth -> DB: verifyCredentials(email, passwordHash)
+    
+    alt Valid Credentials
+        DB -> Auth: returnSuccess
+        Auth -> Auth: generateSessionToken
+        Auth -> BBP: returnSessionToken(token)
+        BBP -> BBP: storeSessionToken(token)
+        BBP -> RU: redirectToMainScreen
+    else Invalid Credentials
+        DB -> Auth: returnFailure
+        Auth -> BBP: returnError("Invalid credentials")
+        BBP -> RU: displayError("Invalid email or password")
+        
+        opt User wants to recover password
+            RU -> BBP: selectForgotPassword
+            BBP -> RU: displayPasswordRecoveryForm
+            RU -> BBP: submitEmail(email)
+            BBP -> Auth: requestPasswordReset(email)
+            Auth -> DB: verifyEmailExists(email)
+            DB -> Auth: returnEmailStatus
+            Auth -> RU: sendRecoveryEmail(email)
+            BBP -> RU: displayConfirmationMessage("Check your email")
+        end
+    end
+    
+else Invalid Format
+    BBP -> RU: displayError("Invalid format or empty fields")
+end
+
+alt Connection Error
+    BBP -> Auth: authenticateUser(email, password)
+    Auth --> BBP: connectionTimeout
+    BBP -> RU: displayError("Connection error. Try again later")
+end
+
+@enduml
