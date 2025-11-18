@@ -1,0 +1,52 @@
+@startuml
+title Weather Enriching Information - Sequence Diagram
+
+participant "BBP" as BBP
+participant "Weather\nService" as Weather
+participant "Database" as DB
+
+note over BBP: Trip recording completed,\nuser chose to save trip
+
+BBP -> BBP: extractTripMetadata(tripData)
+BBP -> BBP: getTimestamp(date, time)
+BBP -> BBP: getLocation(latitude, longitude)
+
+BBP -> Weather: requestWeatherData(timestamp, location)
+
+alt Weather Service Responds
+    Weather -> Weather: retrieveHistoricalData(timestamp, location)
+    Weather -> BBP: returnWeatherData(temperature, windSpeed, conditions)
+    
+    BBP -> BBP: associateWeatherWithTrip(tripData, weatherData)
+    BBP -> DB: storeTripWithWeather(tripData, weatherData)
+    DB -> BBP: dataSaved
+    
+    note over BBP: Weather enrichment successful
+    
+else Weather Service Unavailable
+    Weather --> BBP: serviceUnavailable
+    BBP -> DB: storeTripWithoutWeather(tripData)
+    DB -> BBP: dataSaved
+    
+    note over BBP: Trip saved without weather data
+    
+else Weather Service Returns Incomplete Data
+    Weather -> BBP: returnPartialWeatherData(temperature)
+    BBP -> BBP: associatePartialWeatherWithTrip(tripData, partialWeatherData)
+    BBP -> DB: storeTripWithPartialWeather(tripData, partialWeatherData)
+    DB -> BBP: dataSaved
+    
+    note over BBP: Trip saved with partial weather data
+    
+else Invalid Timestamp or Location
+    BBP -> BBP: validateMetadata(timestamp, location)
+    BBP -> BBP: validationFailed
+    BBP -> DB: storeTripWithoutWeather(tripData)
+    DB -> BBP: dataSaved
+    
+    note over BBP: Cannot request weather data,\ntrip saved without enrichment
+end
+
+note over DB: Later, when user views\ntrip in "My Trips",\nweather data (if available)\nis displayed
+
+@enduml
