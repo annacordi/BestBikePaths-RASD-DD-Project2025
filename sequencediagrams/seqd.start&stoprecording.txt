@@ -6,6 +6,7 @@ participant "BBP" as BBP
 participant "Permission\nManager" as PM
 participant "GPS\nService" as GPS
 participant "Sensor\nService" as Sensor
+participant "Weather\nService" as Weather
 participant "Database" as DB
 
 RU -> BBP: tapStartRecordingButton
@@ -67,11 +68,21 @@ end
 BBP -> BBP: processCollectedData
 BBP -> BBP: calculateTripStatistics
 
-BBP -> RU: displayTripSummary(distance, speed, duration, obstacles)
+BBP -> Weather: requestWeatherData(tripDate, tripTime, tripLocation)
+
+alt Weather Service Responds
+    Weather -> BBP: returnWeatherData(temperature, windSpeed, conditions)
+    BBP -> BBP: attachWeatherDataToTrip
+else Weather Service Unavailable
+    Weather --> BBP: serviceUnavailable
+    BBP -> BBP: saveTripWithoutWeather
+end
+
+BBP -> RU: displayTripSummary(distance, speed, duration, obstacles, weather)
 
 alt Save as Personal Trip
     RU -> BBP: selectSaveAsPersonalTrip
-    BBP -> DB: storeTripData(tripData)
+    BBP -> DB: storeTripData(tripData, weatherData)
     DB -> BBP: tripSaved
 end
 
@@ -79,7 +90,7 @@ alt Review and Publish as Bike Path
     RU -> BBP: selectReviewAndPublish
     BBP -> RU: displayReviewScreen
     RU -> BBP: confirmPublish
-    BBP -> DB: storeAndPublishPathData(pathData)
+    BBP -> DB: storeAndPublishPathData(pathData, weatherData)
     DB -> BBP: pathPublished
 end
 
