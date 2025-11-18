@@ -1,0 +1,808 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_AutoDetection_Final" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0">
+  <collaboration id="Collaboration_AutoDetection_Final">
+    <participant id="Participant_User" name="Registered User" processRef="Process_User" />
+    <participant id="Participant_MobileDevice" name="Mobile Device (GPS + Sensors)" processRef="Process_MobileDevice" />
+    <participant id="Participant_BBP" name="BBP Background Service" processRef="Process_BBP" />
+    <messageFlow id="MF_UserStartsCycling" sourceRef="Task_UserStartsCycling" targetRef="Event_UserCycling" />
+    <messageFlow id="MF_GPSData" sourceRef="Task_SendGPSData" targetRef="Event_ReceiveGPS" />
+    <messageFlow id="MF_StartCommand" sourceRef="Task_SendStartCommand" targetRef="Event_ReceiveStartCommand" />
+    <messageFlow id="MF_StopCommand" sourceRef="Task_SendStopCommand" targetRef="Event_ReceiveStopCommand" />
+    <messageFlow id="MF_CompiledData" sourceRef="Task_SendCompiledData" targetRef="Event_ReceiveCompiledData" />
+    <messageFlow id="MF_Notification" sourceRef="Task_SendNotification" targetRef="Event_ReceiveNotification" />
+  </collaboration>
+  <process id="Process_User" name="User Process" isExecutable="false">
+    <startEvent id="Start_User" name="User starts cycling">
+      <outgoing>Flow_U1</outgoing>
+    </startEvent>
+    <sendTask id="Task_UserStartsCycling" name="User cycles (phone in pocket/bag)">
+      <incoming>Flow_U1</incoming>
+      <outgoing>Flow_U2</outgoing>
+    </sendTask>
+    <task id="Task_UserArrives" name="User arrives and stops">
+      <incoming>Flow_U3</incoming>
+      <outgoing>Flow_U4</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveNotification" name="Receive notification (later)">
+      <incoming>Flow_U4</incoming>
+      <outgoing>Flow_U5</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_OpenApp" name="User opens BBP app">
+      <incoming>Flow_U5</incoming>
+      <outgoing>Flow_U6</outgoing>
+    </task>
+    <task id="Task_ReviewTrip" name="Review detected trip: map, distance, time, obstacles">
+      <incoming>Flow_U6</incoming>
+      <outgoing>Flow_U7</outgoing>
+    </task>
+    <exclusiveGateway id="GW_UserAction" name="User action?">
+      <incoming>Flow_U7</incoming>
+      <outgoing>Flow_Confirm</outgoing>
+      <outgoing>Flow_Edit</outgoing>
+      <outgoing>Flow_Discard</outgoing>
+    </exclusiveGateway>
+    <task id="Task_EditObstacles" name="Edit obstacles (remove false positives, add missing)">
+      <incoming>Flow_Edit</incoming>
+      <outgoing>Flow_U8</outgoing>
+    </task>
+    <exclusiveGateway id="GW_Merge" name="">
+      <incoming>Flow_Confirm</incoming>
+      <incoming>Flow_U8</incoming>
+      <outgoing>Flow_U9</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="GW_SaveChoice">
+      <incoming>Flow_U9</incoming>
+      <outgoing>Flow_SaveTrip</outgoing>
+      <outgoing>Flow_Publish</outgoing>
+      <outgoing>Flow_Both</outgoing>
+    </exclusiveGateway>
+    <task id="Task_SaveTrip" name="Save as Personal Trip">
+      <incoming>Flow_SaveTrip</incoming>
+      <incoming>Flow_Both</incoming>
+      <outgoing>Flow_TripSaved</outgoing>
+    </task>
+    <task id="Task_Publish" name="Publish as BikePathInfo">
+      <incoming>Flow_Publish</incoming>
+      <incoming>Flow_AlsoPublish</incoming>
+      <outgoing>Flow_Published</outgoing>
+    </task>
+    <task id="Task_Discard" name="Discard data">
+      <incoming>Flow_Discard</incoming>
+      <outgoing>Flow_Discarded</outgoing>
+    </task>
+    <exclusiveGateway id="GW_AlsoPublish" name="Also publish?">
+      <incoming>Flow_TripSaved</incoming>
+      <outgoing>Flow_AlsoPublish</outgoing>
+      <outgoing>Flow_OnlyTrip</outgoing>
+    </exclusiveGateway>
+    <endEvent id="End_TripSaved" name="Trip saved">
+      <incoming>Flow_OnlyTrip</incoming>
+    </endEvent>
+    <endEvent id="End_Published" name="Path published">
+      <incoming>Flow_Published</incoming>
+    </endEvent>
+    <endEvent id="End_Discarded" name="Data discarded">
+      <incoming>Flow_Discarded</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_U1" sourceRef="Start_User" targetRef="Task_UserStartsCycling" />
+    <sequenceFlow id="Flow_U2" sourceRef="Task_UserStartsCycling" targetRef="Task_UserContinuesCycling" />
+    <sequenceFlow id="Flow_U3" sourceRef="Task_UserContinuesCycling" targetRef="Task_UserArrives" />
+    <sequenceFlow id="Flow_U4" sourceRef="Task_UserArrives" targetRef="Event_ReceiveNotification" />
+    <sequenceFlow id="Flow_U5" sourceRef="Event_ReceiveNotification" targetRef="Task_OpenApp" />
+    <sequenceFlow id="Flow_U6" sourceRef="Task_OpenApp" targetRef="Task_ReviewTrip" />
+    <sequenceFlow id="Flow_U7" sourceRef="Task_ReviewTrip" targetRef="GW_UserAction" />
+    <sequenceFlow id="Flow_Confirm" name="Confirm" sourceRef="GW_UserAction" targetRef="GW_Merge" />
+    <sequenceFlow id="Flow_Edit" name="Edit" sourceRef="GW_UserAction" targetRef="Task_EditObstacles" />
+    <sequenceFlow id="Flow_Discard" name="Discard" sourceRef="GW_UserAction" targetRef="Task_Discard" />
+    <sequenceFlow id="Flow_U8" sourceRef="Task_EditObstacles" targetRef="GW_Merge" />
+    <sequenceFlow id="Flow_U9" sourceRef="GW_Merge" targetRef="GW_SaveChoice" />
+    <sequenceFlow id="Flow_SaveTrip" name="Save Trip" sourceRef="GW_SaveChoice" targetRef="Task_SaveTrip" />
+    <sequenceFlow id="Flow_Publish" name="Publish" sourceRef="GW_SaveChoice" targetRef="Task_Publish" />
+    <sequenceFlow id="Flow_Both" name="Both" sourceRef="GW_SaveChoice" targetRef="Task_SaveTrip" />
+    <sequenceFlow id="Flow_TripSaved" sourceRef="Task_SaveTrip" targetRef="GW_AlsoPublish" />
+    <sequenceFlow id="Flow_AlsoPublish" name="Yes" sourceRef="GW_AlsoPublish" targetRef="Task_Publish" />
+    <sequenceFlow id="Flow_OnlyTrip" name="No" sourceRef="GW_AlsoPublish" targetRef="End_TripSaved" />
+    <sequenceFlow id="Flow_Published" sourceRef="Task_Publish" targetRef="End_Published" />
+    <sequenceFlow id="Flow_Discarded" sourceRef="Task_Discard" targetRef="End_Discarded" />
+    <task id="Task_UserContinuesCycling" name="User continues cycling">
+      <incoming>Flow_U2</incoming>
+      <outgoing>Flow_U3</outgoing>
+    </task>
+  </process>
+  <process id="Process_MobileDevice" name="Mobile Device Process" isExecutable="false">
+    <intermediateCatchEvent id="Event_UserCycling" name="User starts cycling (trigger)">
+      <outgoing>Flow_M1</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_ActivateGPS" name="GPS automatically activates and tracks movement">
+      <incoming>Flow_M1</incoming>
+      <outgoing>Flow_M2</outgoing>
+    </task>
+    <sendTask id="Task_SendGPSData" name="Continuously send GPS speed data">
+      <incoming>Flow_M2</incoming>
+      <outgoing>Flow_M3</outgoing>
+    </sendTask>
+    <intermediateCatchEvent id="Event_ReceiveStartCommand" name="Receive START command">
+      <incoming>Flow_M3</incoming>
+      <outgoing>Flow_M4</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_CollectGPS" name="Collect detailed GPS trace (location, speed, timestamps)">
+      <incoming>Flow_M4</incoming>
+      <incoming>Flow_ContinueCollecting</incoming>
+      <outgoing>Flow_M5</outgoing>
+    </task>
+    <exclusiveGateway id="GW_SensorsEnabled" name="User configured sensors? (accelerometer + gyroscope)">
+      <incoming>Flow_M5</incoming>
+      <outgoing>Flow_SensorsYes</outgoing>
+      <outgoing>Flow_SensorsNo</outgoing>
+    </exclusiveGateway>
+    <task id="Task_CollectSensors" name="Collect accelerometer + gyroscope data">
+      <incoming>Flow_SensorsYes</incoming>
+      <outgoing>Flow_M6</outgoing>
+    </task>
+    <task id="Task_AnalyzeSensors" name="Analyze sensor data for anomalous spikes">
+      <incoming>Flow_M6</incoming>
+      <outgoing>Flow_M7</outgoing>
+    </task>
+    <exclusiveGateway id="GW_AnomalyDetected" name="Anomaly detected?">
+      <incoming>Flow_M7</incoming>
+      <outgoing>Flow_AnomalyYes</outgoing>
+      <outgoing>Flow_AnomalyNo</outgoing>
+    </exclusiveGateway>
+    <task id="Task_CreateObstacle" name="Save Obstacle data">
+      <incoming>Flow_AnomalyYes</incoming>
+      <outgoing>Flow_M8</outgoing>
+    </task>
+    <exclusiveGateway id="GW_MergeObstacle" name="">
+      <incoming>Flow_M8</incoming>
+      <incoming>Flow_AnomalyNo</incoming>
+      <incoming>Flow_SensorsNo</incoming>
+      <outgoing>Flow_M9</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="GW_ContinueOrStop" name="">
+      <incoming>Flow_M9</incoming>
+      <outgoing>Flow_ContinueCollecting</outgoing>
+      <outgoing>Flow_M10</outgoing>
+    </exclusiveGateway>
+    <intermediateCatchEvent id="Event_ReceiveStopCommand" name="Receive STOP command">
+      <incoming>Flow_M10</incoming>
+      <outgoing>Flow_M11</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_ProcessData" name="Process collected data">
+      <incoming>Flow_M11</incoming>
+      <outgoing>Flow_M12</outgoing>
+    </task>
+    <sendTask id="Task_SendCompiledData" name="Send compiled data collected">
+      <incoming>Flow_M12</incoming>
+      <outgoing>Flow_M14</outgoing>
+    </sendTask>
+    <endEvent id="End_Device" name="Data sent">
+      <incoming>Flow_M14</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_M1" sourceRef="Event_UserCycling" targetRef="Task_ActivateGPS" />
+    <sequenceFlow id="Flow_M2" sourceRef="Task_ActivateGPS" targetRef="Task_SendGPSData" />
+    <sequenceFlow id="Flow_M3" sourceRef="Task_SendGPSData" targetRef="Event_ReceiveStartCommand" />
+    <sequenceFlow id="Flow_M4" sourceRef="Event_ReceiveStartCommand" targetRef="Task_CollectGPS" />
+    <sequenceFlow id="Flow_ContinueCollecting" name="Continue" sourceRef="GW_ContinueOrStop" targetRef="Task_CollectGPS" />
+    <sequenceFlow id="Flow_M5" sourceRef="Task_CollectGPS" targetRef="GW_SensorsEnabled" />
+    <sequenceFlow id="Flow_SensorsYes" name="Yes (enabled)" sourceRef="GW_SensorsEnabled" targetRef="Task_CollectSensors" />
+    <sequenceFlow id="Flow_SensorsNo" name="No (GPS only)" sourceRef="GW_SensorsEnabled" targetRef="GW_MergeObstacle" />
+    <sequenceFlow id="Flow_M6" sourceRef="Task_CollectSensors" targetRef="Task_AnalyzeSensors" />
+    <sequenceFlow id="Flow_M7" sourceRef="Task_AnalyzeSensors" targetRef="GW_AnomalyDetected" />
+    <sequenceFlow id="Flow_AnomalyYes" name="Yes" sourceRef="GW_AnomalyDetected" targetRef="Task_CreateObstacle" />
+    <sequenceFlow id="Flow_AnomalyNo" name="No" sourceRef="GW_AnomalyDetected" targetRef="GW_MergeObstacle" />
+    <sequenceFlow id="Flow_M8" sourceRef="Task_CreateObstacle" targetRef="GW_MergeObstacle" />
+    <sequenceFlow id="Flow_M9" sourceRef="GW_MergeObstacle" targetRef="GW_ContinueOrStop" />
+    <sequenceFlow id="Flow_M10" sourceRef="GW_ContinueOrStop" targetRef="Event_ReceiveStopCommand" />
+    <sequenceFlow id="Flow_M11" sourceRef="Event_ReceiveStopCommand" targetRef="Task_ProcessData" />
+    <sequenceFlow id="Flow_M12" sourceRef="Task_ProcessData" targetRef="Task_SendCompiledData" />
+    <sequenceFlow id="Flow_M14" sourceRef="Task_SendCompiledData" targetRef="End_Device" />
+  </process>
+  <process id="Process_BBP" name="BBP Background Process" isExecutable="false">
+    <intermediateCatchEvent id="Event_ReceiveGPS" name="Receive GPS speed data">
+      <incoming>Flow_LoopMonitor</incoming>
+      <outgoing>Flow_B1</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_AnalyzeSpeed" name="Analyze GPS speed">
+      <incoming>Flow_B1</incoming>
+      <outgoing>Flow_B2</outgoing>
+    </task>
+    <exclusiveGateway id="GW_CyclingDetected" name="Cycling detected? (8-35 km/h sustained)">
+      <incoming>Flow_B2</incoming>
+      <outgoing>Flow_CyclingYes</outgoing>
+      <outgoing>Flow_CyclingNo</outgoing>
+    </exclusiveGateway>
+    <task id="Task_WaitAndMonitor" name="Wait 10 seconds">
+      <incoming>Flow_CyclingNo</incoming>
+      <outgoing>Flow_LoopMonitor</outgoing>
+    </task>
+    <sendTask id="Task_SendStartCommand" name="Send START collection command">
+      <incoming>Flow_CyclingYes</incoming>
+      <outgoing>Flow_B3</outgoing>
+    </sendTask>
+    <task id="Task_MonitorDuringRide" name="Continue monitoring speed">
+      <incoming>Flow_B3</incoming>
+      <incoming>Flow_ContinueMonitoring</incoming>
+      <outgoing>Flow_B4</outgoing>
+    </task>
+    <exclusiveGateway id="GW_StillCycling" name="Still cycling? (speed &#62; 5 km/h)">
+      <incoming>Flow_B4</incoming>
+      <outgoing>Flow_StillYes</outgoing>
+      <outgoing>Flow_StillNo</outgoing>
+    </exclusiveGateway>
+    <task id="Task_WaitContinue" name="Wait few seconds">
+      <incoming>Flow_StillYes</incoming>
+      <outgoing>Flow_ContinueMonitoring</outgoing>
+    </task>
+    <sendTask id="Task_SendStopCommand" name="Send STOP collection command">
+      <incoming>Flow_StillNo</incoming>
+      <outgoing>Flow_B5</outgoing>
+    </sendTask>
+    <intermediateCatchEvent id="Event_ReceiveCompiledData" name="Receive compiled data from device">
+      <incoming>Flow_B5</incoming>
+      <outgoing>Flow_B6</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <serviceTask id="Task_CreateAcquiredData" name="Create AcquiredPathData object">
+      <incoming>Flow_B6</incoming>
+      <outgoing>Flow_B7</outgoing>
+    </serviceTask>
+    <sendTask id="Task_SendNotification" name="Send notification to user">
+      <incoming>Flow_B7</incoming>
+      <outgoing>Flow_B8</outgoing>
+    </sendTask>
+    <endEvent id="End_BBP" name="Waiting for user">
+      <incoming>Flow_B8</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_LoopMonitor" sourceRef="Task_WaitAndMonitor" targetRef="Event_ReceiveGPS" />
+    <sequenceFlow id="Flow_B1" sourceRef="Event_ReceiveGPS" targetRef="Task_AnalyzeSpeed" />
+    <sequenceFlow id="Flow_B2" sourceRef="Task_AnalyzeSpeed" targetRef="GW_CyclingDetected" />
+    <sequenceFlow id="Flow_CyclingYes" name="Yes" sourceRef="GW_CyclingDetected" targetRef="Task_SendStartCommand" />
+    <sequenceFlow id="Flow_CyclingNo" name="No" sourceRef="GW_CyclingDetected" targetRef="Task_WaitAndMonitor" />
+    <sequenceFlow id="Flow_B3" sourceRef="Task_SendStartCommand" targetRef="Task_MonitorDuringRide" />
+    <sequenceFlow id="Flow_ContinueMonitoring" sourceRef="Task_WaitContinue" targetRef="Task_MonitorDuringRide" />
+    <sequenceFlow id="Flow_B4" sourceRef="Task_MonitorDuringRide" targetRef="GW_StillCycling" />
+    <sequenceFlow id="Flow_StillYes" name="Yes" sourceRef="GW_StillCycling" targetRef="Task_WaitContinue" />
+    <sequenceFlow id="Flow_StillNo" name="No" sourceRef="GW_StillCycling" targetRef="Task_SendStopCommand" />
+    <sequenceFlow id="Flow_B5" sourceRef="Task_SendStopCommand" targetRef="Event_ReceiveCompiledData" />
+    <sequenceFlow id="Flow_B6" sourceRef="Event_ReceiveCompiledData" targetRef="Task_CreateAcquiredData" />
+    <sequenceFlow id="Flow_B7" sourceRef="Task_CreateAcquiredData" targetRef="Task_SendNotification" />
+    <sequenceFlow id="Flow_B8" sourceRef="Task_SendNotification" targetRef="End_BBP" />
+  </process>
+  <bpmndi:BPMNDiagram id="Diagram_1">
+    <bpmndi:BPMNPlane id="Plane_1" bpmnElement="Collaboration_AutoDetection_Final">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2600" height="360" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_User_di" bpmnElement="Start_User">
+        <dc:Bounds x="242" y="242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="225" y="285" width="70" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserStartsCycling_di" bpmnElement="Task_UserStartsCycling">
+        <dc:Bounds x="330" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserArrives_di" bpmnElement="Task_UserArrives">
+        <dc:Bounds x="630" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveNotification_di" bpmnElement="Event_ReceiveNotification">
+        <dc:Bounds x="782" y="242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="757" y="206" width="85" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_OpenApp_di" bpmnElement="Task_OpenApp">
+        <dc:Bounds x="870" y="220" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewTrip_di" bpmnElement="Task_ReviewTrip">
+        <dc:Bounds x="1020" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_UserAction_di" bpmnElement="GW_UserAction" isMarkerVisible="true">
+        <dc:Bounds x="1175" y="235" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1169" y="213" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_EditObstacles_di" bpmnElement="Task_EditObstacles">
+        <dc:Bounds x="1280" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_Merge_di" bpmnElement="GW_Merge" isMarkerVisible="true">
+        <dc:Bounds x="1435" y="235" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_SaveChoice_di" bpmnElement="GW_SaveChoice" isMarkerVisible="true">
+        <dc:Bounds x="1535" y="235" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1540" y="293" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SaveTrip_di" bpmnElement="Task_SaveTrip">
+        <dc:Bounds x="1650" y="150" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Publish_di" bpmnElement="Task_Publish">
+        <dc:Bounds x="1900" y="320" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Discard_di" bpmnElement="Task_Discard">
+        <dc:Bounds x="1280" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_AlsoPublish_di" bpmnElement="GW_AlsoPublish" isMarkerVisible="true">
+        <dc:Bounds x="1805" y="165" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1790" y="135" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_TripSaved_di" bpmnElement="End_TripSaved">
+        <dc:Bounds x="1812" y="252" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1802" y="295" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Published_di" bpmnElement="End_Published">
+        <dc:Bounds x="2062" y="342" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2042" y="385" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Discarded_di" bpmnElement="End_Discarded">
+        <dc:Bounds x="1432" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1412" y="185" width="76" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UserContinuesCycling_di" bpmnElement="Task_UserContinuesCycling">
+        <dc:Bounds x="481" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_U1_di" bpmnElement="Flow_U1">
+        <di:waypoint x="278" y="260" />
+        <di:waypoint x="330" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U2_di" bpmnElement="Flow_U2">
+        <di:waypoint x="430" y="260" />
+        <di:waypoint x="481" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U3_di" bpmnElement="Flow_U3">
+        <di:waypoint x="581" y="260" />
+        <di:waypoint x="630" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U4_di" bpmnElement="Flow_U4">
+        <di:waypoint x="730" y="260" />
+        <di:waypoint x="782" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U5_di" bpmnElement="Flow_U5">
+        <di:waypoint x="818" y="260" />
+        <di:waypoint x="870" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U6_di" bpmnElement="Flow_U6">
+        <di:waypoint x="970" y="260" />
+        <di:waypoint x="1020" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U7_di" bpmnElement="Flow_U7">
+        <di:waypoint x="1120" y="260" />
+        <di:waypoint x="1175" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Confirm_di" bpmnElement="Flow_Confirm">
+        <di:waypoint x="1225" y="260" />
+        <di:waypoint x="1435" y="260" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1310" y="242" width="41" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Edit_di" bpmnElement="Flow_Edit">
+        <di:waypoint x="1200" y="285" />
+        <di:waypoint x="1200" y="360" />
+        <di:waypoint x="1280" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1212" y="343" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Discard_di" bpmnElement="Flow_Discard">
+        <di:waypoint x="1200" y="235" />
+        <di:waypoint x="1200" y="160" />
+        <di:waypoint x="1280" y="160" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1211" y="143" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U8_di" bpmnElement="Flow_U8">
+        <di:waypoint x="1380" y="360" />
+        <di:waypoint x="1460" y="360" />
+        <di:waypoint x="1460" y="285" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_U9_di" bpmnElement="Flow_U9">
+        <di:waypoint x="1485" y="260" />
+        <di:waypoint x="1535" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SaveTrip_di" bpmnElement="Flow_SaveTrip">
+        <di:waypoint x="1560" y="235" />
+        <di:waypoint x="1560" y="190" />
+        <di:waypoint x="1650" y="190" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1572" y="173" width="47" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Publish_di" bpmnElement="Flow_Publish">
+        <di:waypoint x="1560" y="285" />
+        <di:waypoint x="1560" y="360" />
+        <di:waypoint x="1900" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1710" y="342" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Both_di" bpmnElement="Flow_Both">
+        <di:waypoint x="1585" y="260" />
+        <di:waypoint x="1700" y="260" />
+        <di:waypoint x="1700" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1668" y="240" width="23" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_TripSaved_di" bpmnElement="Flow_TripSaved">
+        <di:waypoint x="1750" y="190" />
+        <di:waypoint x="1805" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AlsoPublish_di" bpmnElement="Flow_AlsoPublish">
+        <di:waypoint x="1855" y="190" />
+        <di:waypoint x="1970" y="190" />
+        <di:waypoint x="1970" y="320" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1976" y="252" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_OnlyTrip_di" bpmnElement="Flow_OnlyTrip">
+        <di:waypoint x="1830" y="215" />
+        <di:waypoint x="1830" y="252" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1838" y="231" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Published_di" bpmnElement="Flow_Published">
+        <di:waypoint x="2000" y="360" />
+        <di:waypoint x="2062" y="360" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Discarded_di" bpmnElement="Flow_Discarded">
+        <di:waypoint x="1380" y="160" />
+        <di:waypoint x="1432" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_MobileDevice_di" bpmnElement="Participant_MobileDevice" isHorizontal="true">
+        <dc:Bounds x="160" y="460" width="2610" height="550" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_UserCycling_di" bpmnElement="Event_UserCycling">
+        <dc:Bounds x="362" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="335" y="655" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ActivateGPS_di" bpmnElement="Task_ActivateGPS">
+        <dc:Bounds x="450" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendGPSData_di" bpmnElement="Task_SendGPSData">
+        <dc:Bounds x="610" y="590" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveStartCommand_di" bpmnElement="Event_ReceiveStartCommand">
+        <dc:Bounds x="772" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="751" y="586" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CollectGPS_di" bpmnElement="Task_CollectGPS">
+        <dc:Bounds x="900" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_SensorsEnabled_di" bpmnElement="GW_SensorsEnabled" isMarkerVisible="true">
+        <dc:Bounds x="1065" y="605" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1049" y="553" width="83" height="53" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CollectSensors_di" bpmnElement="Task_CollectSensors">
+        <dc:Bounds x="1190" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalyzeSensors_di" bpmnElement="Task_AnalyzeSensors">
+        <dc:Bounds x="1360" y="590" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_AnomalyDetected_di" bpmnElement="GW_AnomalyDetected" isMarkerVisible="true">
+        <dc:Bounds x="1525" y="605" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1526" y="576" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateObstacle_di" bpmnElement="Task_CreateObstacle">
+        <dc:Bounds x="1650" y="590" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_MergeObstacle_di" bpmnElement="GW_MergeObstacle" isMarkerVisible="true">
+        <dc:Bounds x="1815" y="605" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_ContinueOrStop_di" bpmnElement="GW_ContinueOrStop" isMarkerVisible="true">
+        <dc:Bounds x="1925" y="605" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveStopCommand_di" bpmnElement="Event_ReceiveStopCommand">
+        <dc:Bounds x="2042" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2023" y="576" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProcessData_di" bpmnElement="Task_ProcessData">
+        <dc:Bounds x="2150" y="590" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendCompiledData_di" bpmnElement="Task_SendCompiledData">
+        <dc:Bounds x="2320" y="590" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Device_di" bpmnElement="End_Device">
+        <dc:Bounds x="2462" y="612" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2456" y="655" width="48" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_M1_di" bpmnElement="Flow_M1">
+        <di:waypoint x="398" y="630" />
+        <di:waypoint x="450" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M2_di" bpmnElement="Flow_M2">
+        <di:waypoint x="550" y="630" />
+        <di:waypoint x="610" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M3_di" bpmnElement="Flow_M3">
+        <di:waypoint x="710" y="630" />
+        <di:waypoint x="772" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M4_di" bpmnElement="Flow_M4">
+        <di:waypoint x="808" y="630" />
+        <di:waypoint x="900" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="815" y="682" width="82" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ContinueCollecting_di" bpmnElement="Flow_ContinueCollecting">
+        <di:waypoint x="1950" y="605" />
+        <di:waypoint x="1950" y="520" />
+        <di:waypoint x="950" y="520" />
+        <di:waypoint x="950" y="590" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1430" y="502" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M5_di" bpmnElement="Flow_M5">
+        <di:waypoint x="1000" y="630" />
+        <di:waypoint x="1065" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SensorsYes_di" bpmnElement="Flow_SensorsYes">
+        <di:waypoint x="1115" y="630" />
+        <di:waypoint x="1190" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1119" y="612" width="68" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_SensorsNo_di" bpmnElement="Flow_SensorsNo">
+        <di:waypoint x="1090" y="655" />
+        <di:waypoint x="1090" y="890" />
+        <di:waypoint x="1840" y="890" />
+        <di:waypoint x="1840" y="655" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1095" y="863" width="71" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M6_di" bpmnElement="Flow_M6">
+        <di:waypoint x="1290" y="630" />
+        <di:waypoint x="1360" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M7_di" bpmnElement="Flow_M7">
+        <di:waypoint x="1460" y="630" />
+        <di:waypoint x="1525" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AnomalyYes_di" bpmnElement="Flow_AnomalyYes">
+        <di:waypoint x="1575" y="630" />
+        <di:waypoint x="1650" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1605" y="612" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AnomalyNo_di" bpmnElement="Flow_AnomalyNo">
+        <di:waypoint x="1550" y="655" />
+        <di:waypoint x="1550" y="690" />
+        <di:waypoint x="1840" y="690" />
+        <di:waypoint x="1840" y="655" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1688" y="672" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M8_di" bpmnElement="Flow_M8">
+        <di:waypoint x="1750" y="630" />
+        <di:waypoint x="1815" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M9_di" bpmnElement="Flow_M9">
+        <di:waypoint x="1865" y="630" />
+        <di:waypoint x="1925" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M10_di" bpmnElement="Flow_M10">
+        <di:waypoint x="1975" y="630" />
+        <di:waypoint x="2042" y="630" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1959" y="603" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M11_di" bpmnElement="Flow_M11">
+        <di:waypoint x="2078" y="630" />
+        <di:waypoint x="2150" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M12_di" bpmnElement="Flow_M12">
+        <di:waypoint x="2250" y="630" />
+        <di:waypoint x="2320" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_M14_di" bpmnElement="Flow_M14">
+        <di:waypoint x="2420" y="630" />
+        <di:waypoint x="2462" y="630" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_BBP_di" bpmnElement="Participant_BBP" isHorizontal="true">
+        <dc:Bounds x="160" y="1060" width="2610" height="350" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveGPS_di" bpmnElement="Event_ReceiveGPS">
+        <dc:Bounds x="642" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="564.5" y="1206" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AnalyzeSpeed_di" bpmnElement="Task_AnalyzeSpeed">
+        <dc:Bounds x="730" y="1180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_CyclingDetected_di" bpmnElement="GW_CyclingDetected" isMarkerVisible="true">
+        <dc:Bounds x="885" y="1195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="866" y="1143" width="88" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_WaitAndMonitor_di" bpmnElement="Task_WaitAndMonitor">
+        <dc:Bounds x="730" y="1300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendStartCommand_di" bpmnElement="Task_SendStartCommand">
+        <dc:Bounds x="1000" y="1180" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_MonitorDuringRide_di" bpmnElement="Task_MonitorDuringRide">
+        <dc:Bounds x="1160" y="1180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="GW_StillCycling_di" bpmnElement="GW_StillCycling" isMarkerVisible="true">
+        <dc:Bounds x="1325" y="1195" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1309" y="1166" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_WaitContinue_di" bpmnElement="Task_WaitContinue">
+        <dc:Bounds x="1160" y="1300" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendStopCommand_di" bpmnElement="Task_SendStopCommand">
+        <dc:Bounds x="1440" y="1180" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveCompiledData_di" bpmnElement="Event_ReceiveCompiledData">
+        <dc:Bounds x="2232" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2207" y="1245" width="87" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CreateAcquiredData_di" bpmnElement="Task_CreateAcquiredData">
+        <dc:Bounds x="2360" y="1180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendNotification_di" bpmnElement="Task_SendNotification">
+        <dc:Bounds x="2520" y="1180" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_BBP_di" bpmnElement="End_BBP">
+        <dc:Bounds x="2702" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2682" y="1245" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_LoopMonitor_di" bpmnElement="Flow_LoopMonitor">
+        <di:waypoint x="730" y="1340" />
+        <di:waypoint x="660" y="1340" />
+        <di:waypoint x="660" y="1238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B1_di" bpmnElement="Flow_B1">
+        <di:waypoint x="678" y="1220" />
+        <di:waypoint x="730" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B2_di" bpmnElement="Flow_B2">
+        <di:waypoint x="830" y="1220" />
+        <di:waypoint x="885" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CyclingYes_di" bpmnElement="Flow_CyclingYes">
+        <di:waypoint x="935" y="1220" />
+        <di:waypoint x="1000" y="1220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="960" y="1202" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_CyclingNo_di" bpmnElement="Flow_CyclingNo">
+        <di:waypoint x="910" y="1245" />
+        <di:waypoint x="910" y="1340" />
+        <di:waypoint x="830" y="1340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="918" y="1323" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B3_di" bpmnElement="Flow_B3">
+        <di:waypoint x="1100" y="1220" />
+        <di:waypoint x="1160" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ContinueMonitoring_di" bpmnElement="Flow_ContinueMonitoring">
+        <di:waypoint x="1210" y="1300" />
+        <di:waypoint x="1210" y="1260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B4_di" bpmnElement="Flow_B4">
+        <di:waypoint x="1260" y="1220" />
+        <di:waypoint x="1325" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StillYes_di" bpmnElement="Flow_StillYes">
+        <di:waypoint x="1350" y="1245" />
+        <di:waypoint x="1350" y="1340" />
+        <di:waypoint x="1260" y="1340" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1357" y="1323" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_StillNo_di" bpmnElement="Flow_StillNo">
+        <di:waypoint x="1375" y="1220" />
+        <di:waypoint x="1440" y="1220" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1400" y="1202" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B5_di" bpmnElement="Flow_B5">
+        <di:waypoint x="1540" y="1220" />
+        <di:waypoint x="2232" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B6_di" bpmnElement="Flow_B6">
+        <di:waypoint x="2268" y="1220" />
+        <di:waypoint x="2360" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B7_di" bpmnElement="Flow_B7">
+        <di:waypoint x="2460" y="1220" />
+        <di:waypoint x="2520" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_B8_di" bpmnElement="Flow_B8">
+        <di:waypoint x="2620" y="1220" />
+        <di:waypoint x="2702" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_UserStartsCycling_di" bpmnElement="MF_UserStartsCycling">
+        <di:waypoint x="380" y="300" />
+        <di:waypoint x="380" y="612" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_GPSData_di" bpmnElement="MF_GPSData">
+        <di:waypoint x="660" y="670" />
+        <di:waypoint x="660" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_StartCommand_di" bpmnElement="MF_StartCommand">
+        <di:waypoint x="1050" y="1180" />
+        <di:waypoint x="1050" y="810" />
+        <di:waypoint x="790" y="810" />
+        <di:waypoint x="790" y="648" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_StopCommand_di" bpmnElement="MF_StopCommand">
+        <di:waypoint x="1490" y="1180" />
+        <di:waypoint x="1490" y="910" />
+        <di:waypoint x="2060" y="910" />
+        <di:waypoint x="2060" y="648" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_CompiledData_di" bpmnElement="MF_CompiledData">
+        <di:waypoint x="2380" y="670" />
+        <di:waypoint x="2380" y="936" />
+        <di:waypoint x="2250" y="936" />
+        <di:waypoint x="2250" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_Notification_di" bpmnElement="MF_Notification">
+        <di:waypoint x="2570" y="1180" />
+        <di:waypoint x="2570" y="500" />
+        <di:waypoint x="800" y="500" />
+        <di:waypoint x="800" y="278" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
