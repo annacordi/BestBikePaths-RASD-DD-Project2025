@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Unregistered User" as UU
+
+rectangle "Best Bike Paths" {
+  usecase "Register" as UC1
+  usecase "Continue as Guest" as UC2
+  usecase "Search Bike Paths" as UC3
+  usecase "View Paths on Map" as UC4
+  
+  UC2 .> UC3 : <<precedes>>
+  UC3 .> UC4 : <<precedes>>
+}
+
+UU --> UC1
+UU --> UC2
+
+@enduml
