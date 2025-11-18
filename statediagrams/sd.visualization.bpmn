@@ -1,0 +1,374 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_PathVisualization_V2_Final" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0">
+  <bpmn:collaboration id="Collaboration_PathVisualization_V2" name="2. Path Visualization and Comparison">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_UserVisualization" />
+    <bpmn:participant id="Participant_BBPSystem" name="BBP System" processRef="Process_BBPSystem_Visualization" />
+    <bpmn:participant id="Participant_MapService" name="Map Service (External)" processRef="Process_MapService" />
+    <bpmn:messageFlow id="MessageFlow_RequestVisualization" sourceRef="Event_RequestMapVisualization" targetRef="Event_ReceiveVisualizationRequest" />
+    <bpmn:messageFlow id="MessageFlow_MapRequest_BBP_Map" sourceRef="Event_RequestMapService" targetRef="Event_ReceiveMapRequest" />
+    <bpmn:messageFlow id="MessageFlow_MapData" sourceRef="Event_SendMapData" targetRef="Event_ReceiveMapData" />
+    <bpmn:messageFlow id="MessageFlow_SendVisualResponse" sourceRef="Event_SendVisualResponse" targetRef="Event_ReceiveVisualizedResults" />
+    <bpmn:messageFlow id="MessageFlow_SendDetails" sourceRef="Event_SendDetails" targetRef="Event_ReceivePathDetails" />
+    <bpmn:messageFlow id="Flow_0mpk4jj" sourceRef="Event_RequestPathDetails" targetRef="Event_ReceiveDetailRequest" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_UserVisualization" name="User Process: View and Compare Paths" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_WantsToVisualize" name="User starts viewing sorted paths data">
+      <bpmn:documentation>Starts after receiving sorted data from Diagram 1.</bpmn:documentation>
+      <bpmn:outgoing>Flow_ToRequestVisualization</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToRequestVisualization" sourceRef="StartEvent_WantsToVisualize" targetRef="Event_RequestMapVisualization" />
+    <bpmn:intermediateThrowEvent id="Event_RequestMapVisualization" name="Request map visualization">
+      <bpmn:incoming>Flow_ToRequestVisualization</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitingForMap</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_RequestMap" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_WaitingForMap" sourceRef="Event_RequestMapVisualization" targetRef="Event_ReceiveVisualizedResults" />
+    <bpmn:sequenceFlow id="Flow_ToViewCompare" sourceRef="Event_ReceiveVisualizedResults" targetRef="Task_ViewComparePaths" />
+    <bpmn:sequenceFlow id="Flow_ToCheckDetails" sourceRef="Task_ViewComparePaths" targetRef="Gateway_ViewDetails" />
+    <bpmn:sequenceFlow id="Flow_ViewDetails" name="View Details" sourceRef="Gateway_ViewDetails" targetRef="Event_RequestPathDetails">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{wantsDetails == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_WaitForDetails" sourceRef="Event_RequestPathDetails" targetRef="Event_ReceivePathDetails" />
+    <bpmn:sequenceFlow id="Flow_ToViewObstacles" sourceRef="Event_ReceivePathDetails" targetRef="Task_ViewObstacleDetails" />
+    <bpmn:sequenceFlow id="Flow_DetailsViewed" sourceRef="Task_ViewObstacleDetails" targetRef="Gateway_ViewDetails" />
+    <bpmn:sequenceFlow id="Flow_FinishVisualization" name="Finish" sourceRef="Gateway_ViewDetails" targetRef="EndEvent_VisualizationComplete" />
+    <bpmn:intermediateCatchEvent id="Event_ReceiveVisualizedResults" name="Receive visualized paths (on map)">
+      <bpmn:incoming>Flow_WaitingForMap</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToViewCompare</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_VisualizedResults" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Task_ViewComparePaths" name="View scored paths on map and compare routes">
+      <bpmn:incoming>Flow_ToViewCompare</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCheckDetails</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_ViewDetails" name="View Details or Finish?">
+      <bpmn:incoming>Flow_ToCheckDetails</bpmn:incoming>
+      <bpmn:incoming>Flow_DetailsViewed</bpmn:incoming>
+      <bpmn:outgoing>Flow_ViewDetails</bpmn:outgoing>
+      <bpmn:outgoing>Flow_FinishVisualization</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:intermediateCatchEvent id="Event_ReceivePathDetails" name="Receive path details (status, obstacles,...)">
+      <bpmn:incoming>Flow_WaitForDetails</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToViewObstacles</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_PathDetails" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:userTask id="Task_ViewObstacleDetails" name="View detailed information">
+      <bpmn:incoming>Flow_ToViewObstacles</bpmn:incoming>
+      <bpmn:outgoing>Flow_DetailsViewed</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:intermediateThrowEvent id="Event_RequestPathDetails" name="Request details for selected path">
+      <bpmn:incoming>Flow_ViewDetails</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitForDetails</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_RequestDetails" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="EndEvent_VisualizationComplete" name="Visualization session completed">
+      <bpmn:incoming>Flow_FinishVisualization</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:process id="Process_BBPSystem_Visualization" name="BBP System Process: Map Preparation and Data Retrieval" isExecutable="true">
+    <bpmn:startEvent id="Event_ReceiveVisualizationRequest" name="Receive request for map visualization">
+      <bpmn:outgoing>Flow_ToMapServiceRequest</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_RequestMap" />
+    </bpmn:startEvent>
+    <bpmn:intermediateThrowEvent id="Event_RequestMapService" name="Request Map Service for rendering">
+      <bpmn:incoming>Flow_ToMapServiceRequest</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitingForMapData</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_MapDataRequest" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_ToMapServiceRequest" sourceRef="Event_ReceiveVisualizationRequest" targetRef="Event_RequestMapService" />
+    <bpmn:sequenceFlow id="Flow_WaitingForMapData" sourceRef="Event_RequestMapService" targetRef="Event_ReceiveMapData" />
+    <bpmn:sequenceFlow id="Flow_ToRetrieveDetails" sourceRef="Event_ReceiveDetailRequest" targetRef="Task_RetrievePathDetails" />
+    <bpmn:sequenceFlow id="Flow_ToSendDetails" sourceRef="Task_RetrievePathDetails" targetRef="Event_SendDetails" />
+    <bpmn:intermediateCatchEvent id="Event_ReceiveMapData">
+      <bpmn:incoming>Flow_WaitingForMapData</bpmn:incoming>
+      <bpmn:outgoing>Flow_0w9upmt</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_MapData" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_0w9upmt" sourceRef="Event_ReceiveMapData" targetRef="Activity_00l02r2" />
+    <bpmn:intermediateThrowEvent id="Event_SendVisualResponse" name="Send final result">
+      <bpmn:incoming>Flow_1skhbc5</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_VisualizedResults" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:startEvent id="Event_ReceiveDetailRequest" name="Receive request for specific path details">
+      <bpmn:outgoing>Flow_ToRetrieveDetails</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_RequestDetails" />
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_RetrievePathDetails" name="Retrieve detailed path info (status, obstacles)">
+      <bpmn:incoming>Flow_ToRetrieveDetails</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendDetails</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_SendDetails" name="Send detailed info to user">
+      <bpmn:incoming>Flow_ToSendDetails</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_PathDetails" />
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_00l02r2" name="Prepare visual response (Data + Map Overlay)">
+      <bpmn:incoming>Flow_0w9upmt</bpmn:incoming>
+      <bpmn:outgoing>Flow_1skhbc5</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1skhbc5" sourceRef="Activity_00l02r2" targetRef="Event_SendVisualResponse" />
+  </bpmn:process>
+  <bpmn:process id="Process_MapService" name="Map Service Process" isExecutable="false">
+    <bpmn:startEvent id="Event_ReceiveMapRequest" name="Receive visualization request">
+      <bpmn:outgoing>Flow_ToGenerateMap</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_MapDataRequest" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToGenerateMap" sourceRef="Event_ReceiveMapRequest" targetRef="Task_GenerateMapVisualization" />
+    <bpmn:serviceTask id="Task_GenerateMapVisualization" name="Generate map with bike paths overlay">
+      <bpmn:documentation>External map service renders paths and highlights scores.</bpmn:documentation>
+      <bpmn:incoming>Flow_ToGenerateMap</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendMap</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToSendMap" sourceRef="Task_GenerateMapVisualization" targetRef="Event_SendMapData" />
+    <bpmn:endEvent id="Event_SendMapData" name="Send rendered map data to BBP System">
+      <bpmn:incoming>Flow_ToSendMap</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_MapData" />
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmn:message id="Message_RequestMap" name="RequestMapVisualization" />
+  <bpmn:message id="Message_MapDataRequest" name="MapDataRequest" />
+  <bpmn:message id="Message_MapData" name="MapData" />
+  <bpmn:message id="Message_VisualizedResults" name="VisualizedResults" />
+  <bpmn:message id="Message_RequestDetails" name="RequestDetails" />
+  <bpmn:message id="Message_PathDetails" name="PathDetails" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_PathVisualization_V2">
+    <bpmndi:BPMNPlane id="BPMNPlane_PathVisualization_V2" bpmnElement="Collaboration_PathVisualization_V2">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1680" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_WantsToVisualize_di" bpmnElement="StartEvent_WantsToVisualize">
+        <dc:Bounds x="220" y="220" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="203" y="263" width="71" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RequestMapVisualization_di" bpmnElement="Event_RequestMapVisualization">
+        <dc:Bounds x="310" y="220" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="295" y="182.5" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveVisualizedResults_di" bpmnElement="Event_ReceiveVisualizedResults">
+        <dc:Bounds x="922" y="220" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="901" y="178" width="79" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ViewComparePaths_di" bpmnElement="Task_ViewComparePaths">
+        <dc:Bounds x="1010" y="198" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ViewDetails_di" bpmnElement="Gateway_ViewDetails" isMarkerVisible="true">
+        <dc:Bounds x="1185" y="213" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1133" y="206" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceivePathDetails_di" bpmnElement="Event_ReceivePathDetails">
+        <dc:Bounds x="1432" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1415" y="99" width="71" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ViewObstacleDetails_di" bpmnElement="Task_ViewObstacleDetails">
+        <dc:Bounds x="1660" y="120" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RequestPathDetails_di" bpmnElement="Event_RequestPathDetails">
+        <dc:Bounds x="1284" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1262" y="105" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_VisualizationComplete_di" bpmnElement="EndEvent_VisualizationComplete">
+        <dc:Bounds x="1672" y="292" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1659" y="330" width="62" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToRequestVisualization_di" bpmnElement="Flow_ToRequestVisualization">
+        <di:waypoint x="256" y="238" />
+        <di:waypoint x="310" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WaitingForMap_di" bpmnElement="Flow_WaitingForMap">
+        <di:waypoint x="346" y="238" />
+        <di:waypoint x="922" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToViewCompare_di" bpmnElement="Flow_ToViewCompare">
+        <di:waypoint x="958" y="238" />
+        <di:waypoint x="1010" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToCheckDetails_di" bpmnElement="Flow_ToCheckDetails">
+        <di:waypoint x="1110" y="238" />
+        <di:waypoint x="1185" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ViewDetails_di" bpmnElement="Flow_ViewDetails">
+        <di:waypoint x="1210" y="213" />
+        <di:waypoint x="1210" y="160" />
+        <di:waypoint x="1284" y="160" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1189" y="143" width="61" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WaitForDetails_di" bpmnElement="Flow_WaitForDetails">
+        <di:waypoint x="1320" y="160" />
+        <di:waypoint x="1432" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToViewObstacles_di" bpmnElement="Flow_ToViewObstacles">
+        <di:waypoint x="1468" y="160" />
+        <di:waypoint x="1660" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_DetailsViewed_di" bpmnElement="Flow_DetailsViewed">
+        <di:waypoint x="1710" y="200" />
+        <di:waypoint x="1710" y="238" />
+        <di:waypoint x="1235" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_FinishVisualization_di" bpmnElement="Flow_FinishVisualization">
+        <di:waypoint x="1210" y="263" />
+        <di:waypoint x="1210" y="310" />
+        <di:waypoint x="1672" y="310" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1213" y="293" width="30" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_BBPSystem_di" bpmnElement="Participant_BBPSystem" isHorizontal="true">
+        <dc:Bounds x="160" y="418" width="1680" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveVisualizationRequest_di" bpmnElement="Event_ReceiveVisualizationRequest">
+        <dc:Bounds x="310" y="538" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="289" y="581" width="80" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_RequestMapService_di" bpmnElement="Event_RequestMapService">
+        <dc:Bounds x="420" y="538" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="405" y="488" width="66" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveMapData_di" bpmnElement="Event_ReceiveMapData">
+        <dc:Bounds x="662" y="538" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="808" y="553" width="4" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SendVisualResponse_di" bpmnElement="Event_SendVisualResponse">
+        <dc:Bounds x="922" y="538" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="901" y="581" width="80" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveDetailRequest_di" bpmnElement="Event_ReceiveDetailRequest">
+        <dc:Bounds x="1282" y="512" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1190" y="510" width="80" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RetrievePathDetails_di" bpmnElement="Task_RetrievePathDetails">
+        <dc:Bounds x="1360" y="490" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SendDetails_di" bpmnElement="Event_SendDetails">
+        <dc:Bounds x="1512" y="512" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1484.5" y="554" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00l02r2_di" bpmnElement="Activity_00l02r2">
+        <dc:Bounds x="760" y="516" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToMapServiceRequest_di" bpmnElement="Flow_ToMapServiceRequest">
+        <di:waypoint x="346" y="556" />
+        <di:waypoint x="420" y="556" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_WaitingForMapData_di" bpmnElement="Flow_WaitingForMapData">
+        <di:waypoint x="456" y="556" />
+        <di:waypoint x="662" y="556" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToRetrieveDetails_di" bpmnElement="Flow_ToRetrieveDetails">
+        <di:waypoint x="1318" y="530" />
+        <di:waypoint x="1360" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendDetails_di" bpmnElement="Flow_ToSendDetails">
+        <di:waypoint x="1460" y="530" />
+        <di:waypoint x="1512" y="530" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1skhbc5_di" bpmnElement="Flow_1skhbc5">
+        <di:waypoint x="860" y="556" />
+        <di:waypoint x="922" y="556" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0w9upmt_di" bpmnElement="Flow_0w9upmt">
+        <di:waypoint x="698" y="556" />
+        <di:waypoint x="760" y="556" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_MapService_di" bpmnElement="Participant_MapService" isHorizontal="true">
+        <dc:Bounds x="160" y="780" width="1680" height="170" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveMapRequest_di" bpmnElement="Event_ReceiveMapRequest">
+        <dc:Bounds x="420" y="840" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="409" y="883" width="60" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_GenerateMapVisualization_di" bpmnElement="Task_GenerateMapVisualization">
+        <dc:Bounds x="500" y="818" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_SendMapData_di" bpmnElement="Event_SendMapData">
+        <dc:Bounds x="662" y="840" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="638" y="883" width="84" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_ToGenerateMap_di" bpmnElement="Flow_ToGenerateMap">
+        <di:waypoint x="456" y="858" />
+        <di:waypoint x="500" y="858" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_ToSendMap_di" bpmnElement="Flow_ToSendMap">
+        <di:waypoint x="600" y="858" />
+        <di:waypoint x="662" y="858" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_RequestVisualization_di" bpmnElement="MessageFlow_RequestVisualization">
+        <di:waypoint x="328" y="256" />
+        <di:waypoint x="328" y="538" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="352" y="435" width="66" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_MapRequest_BBP_Map_di" bpmnElement="MessageFlow_MapRequest_BBP_Map">
+        <di:waypoint x="438" y="574" />
+        <di:waypoint x="438" y="840" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="448" y="694" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_MapData_di" bpmnElement="MessageFlow_MapData">
+        <di:waypoint x="680" y="840" />
+        <di:waypoint x="680" y="574" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="668" y="688" width="59" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_SendVisualResponse_di" bpmnElement="MessageFlow_SendVisualResponse">
+        <di:waypoint x="940" y="538" />
+        <di:waypoint x="940" y="256" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="947" y="396" width="81" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_SendDetails_di" bpmnElement="MessageFlow_SendDetails">
+        <di:waypoint x="1530" y="512" />
+        <di:waypoint x="1530" y="400" />
+        <di:waypoint x="1450" y="400" />
+        <di:waypoint x="1450" y="178" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1666" y="449" width="87" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mpk4jj_di" bpmnElement="Flow_0mpk4jj">
+        <di:waypoint x="1300" y="180" />
+        <di:waypoint x="1300" y="512" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
