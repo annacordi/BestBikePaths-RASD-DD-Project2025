@@ -1,0 +1,92 @@
+@startuml
+title Start/Stop Trip Recording - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Permission\nManager" as PM
+participant "GPS\nService" as GPS
+participant "Sensor\nService" as Sensor
+participant "Database" as DB
+
+RU -> BBP: tapStartRecordingButton
+
+alt First Time Using Feature
+    BBP -> PM: requestGPSPermission
+    PM -> RU: displayGPSPermissionRequest
+    RU -> PM: grantGPSPermission
+    PM -> BBP: permissionGranted
+    
+    BBP -> PM: requestSensorPermission
+    PM -> RU: displaySensorPermissionRequest(optional)
+    
+    alt User Grants Sensor Permission
+        RU -> PM: grantSensorPermission
+        PM -> BBP: sensorPermissionGranted
+    else User Denies Sensor Permission
+        RU -> PM: denySensorPermission
+        PM -> BBP: sensorPermissionDenied
+    end
+end
+
+BBP -> GPS: initializeGPSTracking
+GPS -> BBP: gpsInitialized
+
+opt Sensor Permission Granted
+    BBP -> Sensor: initializeSensorCollection
+    Sensor -> BBP: sensorsInitialized
+end
+
+BBP -> BBP: startBackgroundRecording
+BBP -> RU: displayStopRecordingButton
+
+note over RU: RU starts cycling
+
+loop During Trip
+    GPS -> BBP: sendGPSCoordinates(latitude, longitude)
+    
+    opt Sensors Enabled
+        Sensor -> BBP: sendSensorData(accelerometer, gyroscope)
+        BBP -> BBP: detectObstacles
+    end
+    
+    BBP -> BBP: storeTripDataTemporarily
+end
+
+note over RU: RU finishes cycling
+
+RU -> BBP: tapStopRecordingButton
+
+BBP -> GPS: stopGPSTracking
+GPS -> BBP: trackingStopped
+
+opt Sensors Enabled
+    BBP -> Sensor: stopSensorCollection
+    Sensor -> BBP: collectionStopped
+end
+
+BBP -> BBP: processCollectedData
+BBP -> BBP: calculateTripStatistics
+
+BBP -> RU: displayTripSummary(distance, speed, duration, obstacles)
+
+alt Save as Personal Trip
+    RU -> BBP: selectSaveAsPersonalTrip
+    BBP -> DB: storeTripData(tripData)
+    DB -> BBP: tripSaved
+end
+
+alt Review and Publish as Bike Path
+    RU -> BBP: selectReviewAndPublish
+    BBP -> RU: displayReviewScreen
+    RU -> BBP: confirmPublish
+    BBP -> DB: storeAndPublishPathData(pathData)
+    DB -> BBP: pathPublished
+end
+
+alt Discard Trip
+    RU -> BBP: selectDiscard
+    BBP -> BBP: deleteTempData
+    BBP -> RU: confirmDiscarded
+end
+
+@enduml
