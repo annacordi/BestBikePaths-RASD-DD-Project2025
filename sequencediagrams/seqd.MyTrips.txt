@@ -1,0 +1,60 @@
+@startuml
+title Visualize My Trips - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+RU -> BBP: navigateToMyTrips
+
+BBP -> DB: retrieveUserTrips(userId)
+
+alt Trips Exist
+    DB -> BBP: returnTripsList(trips)
+    BBP -> BBP: sortTripsChronologically
+    BBP -> RU: displayTripHistory(date, distance, duration)
+    
+    RU -> BBP: selectTrip(tripId)
+    
+    BBP -> DB: retrieveTripDetails(tripId)
+    
+    alt Trip Data Available
+        DB -> BBP: returnTripData(tripDetails, weatherData)
+        BBP -> RU: displayTripStatistics(date, time, origin, destination, distance, avgSpeed, maxSpeed, duration, elevation)
+        BBP -> RU: displayRouteOnMap(pathCoordinates)
+        
+        opt Weather Data Stored
+            BBP -> RU: displayWeatherInformation(temperature, windSpeed, conditions)
+        end
+        
+        alt User Wants to View Another Trip
+            RU -> BBP: selectAnotherTrip(tripId)
+            BBP -> DB: retrieveTripDetails(tripId)
+            DB -> BBP: returnTripData(tripDetails, weatherData)
+            BBP -> RU: displayTripStatistics(...)
+            BBP -> RU: displayRouteOnMap(pathCoordinates)
+            opt Weather Data Stored
+                BBP -> RU: displayWeatherInformation(...)
+            end
+        else User Returns to List
+            RU -> BBP: returnToTripList
+            BBP -> RU: displayTripHistory(date, distance, duration)
+        end
+        
+    else Trip Data Corrupted
+        DB -> BBP: returnError("Trip data corrupted")
+        BBP -> RU: displayError("This trip data is unavailable")
+    end
+    
+else No Trips Found
+    DB -> BBP: returnEmptyList
+    BBP -> RU: displayMessage("No trips recorded yet. Start recording!")
+end
+
+alt Database Connection Error
+    BBP -> DB: retrieveUserTrips(userId)
+    DB --> BBP: connectionError
+    BBP -> RU: displayError("Connection error. Try again later")
+end
+
+@enduml
