@@ -1,5 +1,6 @@
 @startuml bbp
 title Best Bike Paths 
+left to right direction
 
 class User {
   + register()
@@ -20,6 +21,11 @@ class RegisteredUser {
   + stopManualRecording(): AcquiredPathData
   + enableAutomaticDetection()
   + disableAutomaticDetection()
+
+  + enableGPS()
+  + disableGPS()
+  + enableSensors()
+  + disableSensors()
   
   ' Azioni su AcquiredPathData
   + saveAsTripPersonal(acquired: AcquiredPathData): Trip
@@ -28,7 +34,9 @@ class RegisteredUser {
   
   ' Visualizzazione
   + viewPersonalTrips(): List<Trip>
-  + viewTripStatistics(tripId: String): TripStatistics
+  + viewTrip(tripId: String): Trip
+
+  + editProfile()
 }
 
 User <|-- RegisteredUser
@@ -37,6 +45,7 @@ class MobileDevice {
   - deviceId: String
   - sensorsEnabled: boolean
   - autoDetectionEnabled: boolean
+  - GPSEnabled: boolean
   
   ' Monitoraggio attività
   + detectBikingActivity(): boolean
@@ -69,6 +78,8 @@ class AcquiredPathData {
   - inferredStreetNames: List<String>
   - suggestedOrigin: Address
   - suggestedDestination: Address
+  - suggestedStatus: PathStatus
+  + review(): boolean
 }
 
 enum AcquisitionMode {
@@ -86,26 +97,20 @@ class Trip {
   - endTime: DateTime
   - distance: double
   - avgSpeed: double
-  - routeCoordinates: List<Coordinate>
-  + calculateStatistics(): TripStatistics
-}
-class TripStatistics {
-  - totalDistance: double
-  - averageSpeed: double
   - duration: Duration
-  - maxSpeed: double
-  - elevationGain: double
+  - routeCoordinates: List<Coordinate>
+  + publish()
 }
+
 class WeatherData {
   - temperature: double
   - windSpeed: double
   - condition: String
   - timestamp: DateTime
 }
-AcquiredPathData ..> Trip : <<can be saved as>>
-RegisteredUser "1" --> "*" Trip : records
+PathInfo ..> Trip : <<can be saved as>>
+Trip ..> BikePath : <<can be published as>>
 Trip "1" --> "0..1" WeatherData : enrichedWith
-Trip --> TripStatistics : generates
 
 class PathInfo {
   - pathInfoId: String
@@ -114,14 +119,15 @@ class PathInfo {
   - isPublished: boolean
   - origin: Address
   - destination: Address
+  - status: PathStatus
   + publish()
+  + save()
 }
 class PathSegment {
   - segmentId: String
   - streetName: String
-  - status: PathStatus
-  + updateStatus(newStatus: PathStatus)
 }
+
 class Obstacle {
   - obstacleId: String
   - location: Coordinate
