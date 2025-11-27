@@ -1,0 +1,192 @@
+@startuml bbp
+title Best Bike Paths 
+left to right direction
+
+class User {
+  + register()
+  + searchPaths(origin: Address, destination: Address): List<BikePath>
+  + viewPathsOnMap(paths: List<BikePath>)
+}
+
+class RegisteredUser {
+  - userId: String
+  - email: String
+  - name: String
+  - passwordHash: String
+  + login()
+  + logout()
+  + editProfile()
+  
+  ' Trigger di acquisizione
+  + startManualRecording()
+  + stopManualRecording(): AcquiredPathData
+  + enableAutomaticDetection()
+  + disableAutomaticDetection()
+  
+  
+  + enableGPS()
+  + disableGPS()
+  + enableSensors()
+  + disableSensors()
+  
+  ' Delegazione entità
+  + reviewAndCorrectData(acquired: AcquiredPathData): PathInfo
+  + createPathInfoManually(origin: Address, destination: Address, segments: List<PathSegment>): PathInfo 
+  
+  ' Visualizzazione
+  + viewPersonalTrips(): List<Trip>
+  + viewTrip(tripId: String): Trip
+}
+
+User <|-- RegisteredUser
+
+class MobileDevice {
+  - deviceId: String
+  - sensorsEnabled: boolean
+  - autoDetectionEnabled: boolean
+  - GPSEnabled: boolean
+  
+  ' Monitoraggio attività
+  + detectBikingActivity(): boolean
+  + startDataCollection()
+  + stopDataCollection(): AcquiredPathData
+  
+  ' Raccolta dati
+  + getGPSData(): Coordinate
+  + getAccelerometerData(): float[3]
+  + getGyroscopeData(): float[3]
+}
+
+class SensorData {
+  - accelerometer: float[3]
+  - gyroscope: float[3]
+  - timestamp: DateTime
+}
+
+RegisteredUser "1" --> "0..1" MobileDevice : uses
+RegisteredUser "1" --> "*" PathInfo : creates
+RegisteredUser "1" --> "*" Trip : owns
+RegisteredUser "1" --> "*" AcquiredPathData : reviews
+
+MobileDevice --> SensorData : collects
+
+class AcquiredPathData {
+  - acquisitionId: String
+  - userId: String
+  - acquisitionMode: AcquisitionMode
+  - startTime: DateTime
+  - endTime: DateTime
+  - gpsTrace: List<Coordinate>
+  - detectedObstacles: List<Obstacle>
+  - inferredStreetNames: List<Address>
+  - suggestedOrigin: Address
+  - suggestedDestination: Address
+  - suggestedStatus: PathStatus
+  + review(): boolean
+}
+
+enum AcquisitionMode {
+  MANUAL_RECORDING
+  AUTOMATIC_DETECTION
+}
+
+MobileDevice ..> AcquiredPathData : <<produces>>
+AcquiredPathData ..> PathInfo : <<reviewed to>>
+
+class PathInfo {
+  - pathInfoId: String
+  - ownerId: String
+  - creationTime: DateTime
+  - isPublished: boolean
+  - origin: Address
+  - destination: Address
+  - status: PathStatus
+  + saveAsTrip(): Trip
+  + publishAsBikePath(): BikePath
+}
+
+class Trip {
+  - tripId: String
+  - userId: String
+  - sourcePathInfo: PathInfo
+  - startTime: DateTime
+  - endTime: DateTime
+  - distance: double
+  - avgSpeed: double
+  - duration: Duration
+  - routeCoordinates: List<Coordinate>
+  + publishAsBikePath(): BikePath
+}
+
+class BikePath {
+  - bikePathId: String
+  - sourcePathInfo: PathInfo
+  - score: double
+  - contributorId: String
+  - lastUpdate: DateTime
+  + update(newData: PathInfo)
+}
+
+
+PathInfo "1" --> "0..1" Trip : savedAs
+PathInfo "1" --> "0..1" BikePath : publishedAs
+Trip "0..*" --> "0..1" BikePath : canPublishAs
+
+class WeatherData {
+  - temperature: double
+  - windSpeed: double
+  - condition: String
+  - timestamp: DateTime
+}
+
+Trip "1" --> "0..1" WeatherData : enrichedWith
+
+class PathSegment {
+  - segmentId: String
+  - streetName: String
+}
+
+class Obstacle {
+  - obstacleId: String
+  - location: Coordinate
+  - type: ObstacleType
+  - confirmed: boolean
+  - reportedAt: DateTime
+  + confirm()
+  + reject()
+}
+
+enum PathStatus {
+  OPTIMAL
+  MEDIUM
+  SUFFICIENT
+  REQUIRES_MAINTENANCE
+}
+
+enum ObstacleType {
+  POTHOLE
+  DEBRIS
+  CONSTRUCTION
+  OTHER
+}
+
+PathInfo "1" --> "1..*" PathSegment : composedOf
+PathSegment "1" --> "*" Obstacle : contains
+BikePath "1" --> "1..*" PathSegment : displays
+
+User "1" --> "*" BikePath : views
+
+class Coordinate {
+  - latitude: double
+  - longitude: double
+  + distanceTo(other: Coordinate): double
+}
+
+class Address {
+  - street: String
+  - city: String
+  - postalCode: String
+  + toCoordinate(): Coordinate
+}
+
+@enduml
