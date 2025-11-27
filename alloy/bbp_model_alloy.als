@@ -1,13 +1,4 @@
-/**
- * Best Bike Paths (BBP) - Alloy Model
- * 
- * This model formalizes the core aspects of the BBP system, focusing on:
- * - User registration and authentication
- * - Trip recording (manual and automatic)
- * - Path information collection and publication
- * - Obstacle detection and confirmation
- * - The relationship between Trips (personal) and PathInfo (publishable)
- */
+
 
 // ============================================
 // PRIMITIVE TYPES (defined first)
@@ -345,3 +336,4 @@ run showManualPathInsertion for 5 but exactly 1 PathInfo
 run showTripUnderReview for 5 but exactly 1 Trip
 run showAutomaticDetection for 5 but exactly 1 Trip
 run showMultipleUsersScenario for 6
+
