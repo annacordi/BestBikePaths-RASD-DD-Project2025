@@ -80,50 +80,54 @@ end
 
 BBP -> RU: displayTripSummary(distance, speed, duration, obstacles, weather)
 
-RU -> BBP: selectReviewAndEdit
+BBP -> RU: displayInitialOptions(reviewAndEdit, discard)
 
-BBP -> RU: displayReviewScreen(originAddress, destinationAddress, pathStatus, detectedObstacles)
+alt User Chooses to Discard
+    RU -> BBP: selectDiscard
+    BBP -> BBP: deleteTempData
+    BBP -> RU: confirmDiscarded
+end
 
-RU -> BBP: editTripData(modifiedOrigin, modifiedDestination, confirmedObstacles, pathStatus)
-
-BBP -> BBP: updateTripData
-
-BBP -> RU: displaySaveOptions
-
-alt Save as Personal Trip Only
-    RU -> BBP: selectSaveAsPersonalTrip
-    BBP -> DB: storeTripData(tripData, weatherData)
-    DB -> BBP: tripSaved
-    BBP -> RU: confirmTripSaved
+alt User Chooses to Review and Edit
+    RU -> BBP: selectReviewAndEdit
     
-    opt User Decides to Publish Later
-        RU -> BBP: selectPublishSavedTrip
+    BBP -> RU: displayReviewScreen(originAddress, destinationAddress, pathStatus, detectedObstacles)
+    
+    RU -> BBP: editTripData(modifiedOrigin, modifiedDestination, confirmedObstacles, pathStatus)
+    
+    BBP -> BBP: updateTripData
+    
+    BBP -> RU: displaySaveOptions
+    
+    alt Save as Personal Trip Only
+        RU -> BBP: selectSaveAsPersonalTrip
+        BBP -> DB: storeTripData(tripData, weatherData)
+        DB -> BBP: tripSaved
+        BBP -> RU: confirmTripSaved
+        
+        opt User Decides to Publish Later
+            RU -> BBP: selectPublishSavedTrip
+            BBP -> DB: publishPathData(pathData, weatherData)
+            DB -> BBP: pathPublished
+            BBP -> RU: confirmPathPublished
+        end
+    end
+    
+    alt Publish as Bike Path Only
+        RU -> BBP: selectPublishAsBikePath
         BBP -> DB: publishPathData(pathData, weatherData)
         DB -> BBP: pathPublished
         BBP -> RU: confirmPathPublished
     end
-end
-
-alt Publish as Bike Path Only
-    RU -> BBP: selectPublishAsBikePath
-    BBP -> DB: publishPathData(pathData, weatherData)
-    DB -> BBP: pathPublished
-    BBP -> RU: confirmPathPublished
-end
-
-alt Save AND Publish Simultaneously
-    RU -> BBP: selectSaveAndPublish
-    BBP -> DB: storeTripData(tripData, weatherData)
-    DB -> BBP: tripSaved
-    BBP -> DB: publishPathData(pathData, weatherData)
-    DB -> BBP: pathPublished
-    BBP -> RU: confirmTripSavedAndPublished
-end
-
-alt Discard Trip
-    RU -> BBP: selectDiscard
-    BBP -> BBP: deleteTempData
-    BBP -> RU: confirmDiscarded
+    
+    alt Save AND Publish Simultaneously
+        RU -> BBP: selectSaveAndPublish
+        BBP -> DB: storeTripData(tripData, weatherData)
+        DB -> BBP: tripSaved
+        BBP -> DB: publishPathData(pathData, weatherData)
+        DB -> BBP: pathPublished
+        BBP -> RU: confirmTripSavedAndPublished
+    end
 end
 
 @enduml
