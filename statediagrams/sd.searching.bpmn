@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_SearchRoute_V1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0">
+  <bpmn:collaboration id="Collaboration_SearchRoute_V1" name="Search a Route Between Two Points">
+    <bpmn:participant id="Participant_User" name="User (Registered or Non-Registered)" processRef="Process_UserSearchRoute_V1" />
+    <bpmn:participant id="Participant_BBPSystem" name="BBP System" processRef="Process_BBPSystem_V1" />
+    <bpmn:messageFlow id="MessageFlow_SearchRequest" name="Search Request" sourceRef="Event_SendSearchRequest" targetRef="Event_ReceiveSearchRequest" />
+    <bpmn:messageFlow id="MessageFlow_SearchResponse" name="Search Response (Path Data)" sourceRef="Event_SendResultsToUser" targetRef="Event_ReceiveSearchResults" />
+    <bpmn:messageFlow id="MessageFlow_ErrorResponse" name="Error/No Paths" sourceRef="Event_SendErrorToUser" targetRef="Event_ReceiveSearchResults" />
+    <bpmn:messageFlow id="MessageFlow_NoPathsResponse" name="No Paths Data" sourceRef="Event_SendEmptyResultToUser" targetRef="Event_ReceiveSearchResults" />
+  </bpmn:collaboration>
+  
+  <bpmn:process id="Process_UserSearchRoute_V1" name="User Search Route Process - V1 (Data Acquisition)" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_UserWantsSearch" name="User wants to search bike paths">
+      <bpmn:outgoing>Flow_ToEnterAddresses</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToEnterAddresses" sourceRef="StartEvent_UserWantsSearch" targetRef="Task_EnterOriginDestination" />
+    <bpmn:userTask id="Task_EnterOriginDestination" name="Enter origin and destination addresses">
+      <bpmn:incoming>Flow_ToEnterAddresses</bpmn:incoming>
+      <bpmn:incoming>Flow_RetrySearch</bpmn:incoming>
+      <bpmn:outgoing>Flow_AddressesEntered</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_AddressesEntered" sourceRef="Task_EnterOriginDestination" targetRef="Event_SendSearchRequest" />
+    <bpmn:intermediateThrowEvent id="Event_SendSearchRequest" name="Send search request">
+      <bpmn:incoming>Flow_AddressesEntered</bpmn:incoming>
+      <bpmn:outgoing>Flow_WaitingForResults</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_SearchRequest" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_WaitingForResults" sourceRef="Event_SendSearchRequest" targetRef="Event_ReceiveSearchResults" />
+    <bpmn:intermediateCatchEvent id="Event_ReceiveSearchResults" name="Receive search results (data)">
+      <bpmn:incoming>Flow_WaitingForResults</bpmn:incoming>
+      <bpmn:outgoing>Flow_ResultsReceived</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_SearchResponse" />
+    </bpmn:intermediateCatchEvent>
+    
+    <bpmn:userTask id="Task_AcknowledgeData" name="Acknowledge paths data received">
+      <bpmn:incoming>Flow_ResultsReceived</bpmn:incoming>
+      <bpmn:outgoing>Flow_DataAcknowledged</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_ResultsReceived" sourceRef="Event_ReceiveSearchResults" targetRef="Task_AcknowledgeData" />
+    
+    <bpmn:exclusiveGateway id="Gateway_SearchAgain" name="Search again?">
+      <bpmn:incoming>Flow_DataAcknowledged</bpmn:incoming>
+      <bpmn:outgoing>Flow_RetrySearch</bpmn:outgoing>
+      <bpmn:outgoing>Flow_EndSearch</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_DataAcknowledged" sourceRef="Task_AcknowledgeData" targetRef="Gateway_SearchAgain" />
+    
+    <bpmn:sequenceFlow id="Flow_RetrySearch" name="Yes" sourceRef="Gateway_SearchAgain" targetRef="Task_EnterOriginDestination">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{searchAgain == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_EndSearch" name="No" sourceRef="Gateway_SearchAgain" targetRef="EndEvent_SearchComplete" />
+    <bpmn:endEvent id="EndEvent_SearchComplete" name="Search completed (data acquired)">
+      <bpmn:incoming>Flow_EndSearch</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  
+  <bpmn:process id="Process_BBPSystem_V1" name="BBP System Process - V1 (Calculation)" isExecutable="true">
+    <bpmn:startEvent id="Event_ReceiveSearchRequest" name="Receive search request">
+      <bpmn:outgoing>Flow_ToValidate</bpmn:outgoing>
+      <bpmn:messageEventDefinition messageRef="Message_SearchRequest" />
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_ToValidate" sourceRef="Event_ReceiveSearchRequest" targetRef="Task_ValidateAddresses" />
+    <bpmn:serviceTask id="Task_ValidateAddresses" name="Validate origin and destination addresses" camunda:class="com.bbp.service.ValidateAddressesService">
+      <bpmn:incoming>Flow_ToValidate</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToValidationCheck</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_ToValidationCheck" sourceRef="Task_ValidateAddresses" targetRef="Gateway_ValidAddresses" />
+    <bpmn:exclusiveGateway id="Gateway_ValidAddresses" name="Addresses valid?">
+      <bpmn:incoming>Flow_ToValidationCheck</bpmn:incoming>
+      <bpmn:outgoing>Flow_Valid</bpmn:outgoing>
+      <bpmn:outgoing>Flow_Invalid</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:sequenceFlow id="Flow_Invalid" name="No" sourceRef="Gateway_ValidAddresses" targetRef="Event_SendErrorToUser" />
+    <bpmn:endEvent id="Event_SendErrorToUser" name="Send error to user (Invalid Address)">
+      <bpmn:incoming>Flow_Invalid</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_SearchResponse" />
+    </bpmn:endEvent>
+    
+    <bpmn:sequenceFlow id="Flow_Valid" name="Yes" sourceRef="Gateway_ValidAddresses" targetRef="Task_ConvertToCoordinates">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{addressesValid == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_ConvertToCoordinates" name="Convert addresses to coordinates" camunda:class="com.bbp.service.AddressToCoordinateService">
+      <bpmn:incoming>Flow_Valid</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToQuery</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:sequenceFlow id="Flow_ToQuery" sourceRef="Task_ConvertToCoordinates" targetRef="Task_QueryDatabase" />
+    <bpmn:serviceTask id="Task_QueryDatabase" name="Query database for published paths (using coordinates)" camunda:class="com.bbp.service.QueryBikePathsService">
+      <bpmn:incoming>Flow_ToQuery</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToReceivePaths</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:sequenceFlow id="Flow_ToReceivePaths" sourceRef="Task_QueryDatabase" targetRef="Task_ReceiveBikePaths" />
+    <bpmn:serviceTask id="Task_ReceiveBikePaths" name="Receive matching paths (Path objects)" camunda:class="com.bbp.service.ReceiveBikePathsService">
+      <bpmn:incoming>Flow_ToReceivePaths</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToCheckPaths</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:sequenceFlow id="Flow_ToCheckPaths" sourceRef="Task_ReceiveBikePaths" targetRef="Gateway_PathsFound" />
+    <bpmn:exclusiveGateway id="Gateway_PathsFound" name="Paths found?">
+      <bpmn:incoming>Flow_ToCheckPaths</bpmn:incoming>
+      <bpmn:outgoing>Flow_PathsExist</bpmn:outgoing>
+      <bpmn:outgoing>Flow_NoPathsFound</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <bpmn:sequenceFlow id="Flow_NoPathsFound" name="No" sourceRef="Gateway_PathsFound" targetRef="Event_SendEmptyResultToUser">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{pathsFound == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_SendEmptyResultToUser" name="Send 'no paths' message to user">
+      <bpmn:incoming>Flow_NoPathsFound</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_SearchResponse" />
+    </bpmn:endEvent>
+    
+    <bpmn:sequenceFlow id="Flow_PathsExist" name="Yes" sourceRef="Gateway_PathsFound" targetRef="Task_CalculateScores">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{pathsFound == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:serviceTask id="Task_CalculateScores" name="Calculate path scores (Status &amp; Effectiveness)" camunda:class="com.bbp.service.CalculatePathScoresService">
+      [cite_start]<bpmn:documentation>Score computed based on path status (optimal, medium, etc.) and effectiveness to reach destination [cite: 101]</bpmn:documentation>
+      <bpmn:incoming>Flow_PathsExist</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSort</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:sequenceFlow id="Flow_ToSort" sourceRef="Task_CalculateScores" targetRef="Task_SortByScore" />
+    <bpmn:serviceTask id="Task_SortByScore" name="Sort paths by score (descending)" camunda:class="com.bbp.service.SortPathsByScoreService">
+      [cite_start]<bpmn:documentation>Paths are sorted based on their score[cite: 100]. Higher score is better.</bpmn:documentation>
+      <bpmn:incoming>Flow_ToSort</bpmn:incoming>
+      <bpmn:outgoing>Flow_ToSendResults</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <bpmn:sequenceFlow id="Flow_ToSendResults" sourceRef="Task_SortByScore" targetRef="Event_SendResultsToUser" />
+    <bpmn:endEvent id="Event_SendResultsToUser" name="Send sorted path data to user">
+      <bpmn:incoming>Flow_ToSendResults</bpmn:incoming>
+      <bpmn:messageEventDefinition messageRef="Message_SearchResponse" />
+    </bpmn:endEvent>
+  </bpmn:process>
+  
+  <bpmn:message id="Message_SearchRequest" name="SearchRequest" />
+  <bpmn:message id="Message_SearchResponse" name="SearchResponse" />
+</bpmn:definitions>
