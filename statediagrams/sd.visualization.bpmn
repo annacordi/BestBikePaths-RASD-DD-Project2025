@@ -37,11 +37,11 @@
       <bpmn:outgoing>Flow_ToViewCompare</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_VisualizedResults" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:userTask id="Task_ViewComparePaths" name="View scored paths on map and compare routes">
+    <bpmn:userTask id="Task_ViewComparePaths" name="View paths on map">
       <bpmn:incoming>Flow_ToViewCompare</bpmn:incoming>
       <bpmn:outgoing>Flow_ToCheckDetails</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:exclusiveGateway id="Gateway_ViewDetails" name="View Details or Finish?">
+    <bpmn:exclusiveGateway id="Gateway_ViewDetails" name="">
       <bpmn:incoming>Flow_ToCheckDetails</bpmn:incoming>
       <bpmn:incoming>Flow_DetailsViewed</bpmn:incoming>
       <bpmn:outgoing>Flow_ViewDetails</bpmn:outgoing>
