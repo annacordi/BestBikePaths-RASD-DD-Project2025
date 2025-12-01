@@ -1,0 +1,145 @@
+@startuml
+title Start/Stop Trip Recording - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Permission\nManager" as PM
+participant "GPS\nService" as GPS
+participant "Sensor\nService" as Sensor
+participant "Weather\nService" as Weather
+participant "Database" as DB
+
+RU -> BBP: tapStartRecordingButton
+
+BBP -> PM: checkGPSPermission
+PM -> BBP: returnGPSPermissionStatus
+
+alt GPS Permission Not Granted
+    BBP -> PM: requestGPSPermission(mandatory)
+    PM -> RU: displayGPSPermissionRequest\n(Required for recording)
+    
+    alt User Grants GPS Permission
+        RU -> PM: grantGPSPermission
+        PM -> BBP: gpsPermissionGranted
+    else User Denies GPS Permission
+        RU -> PM: denyGPSPermission
+        PM -> BBP: gpsPermissionDenied
+        BBP -> RU: displayError\n(GPS mandatory, cannot record)
+        note over RU, BBP: Recording cannot proceed\nProcess ends here
+    end
+end
+
+BBP -> PM: checkSensorPermission
+PM -> BBP: returnSensorPermissionStatus
+
+alt Sensor Permission Not Granted
+    BBP -> PM: requestSensorPermission(mandatory)
+    PM -> RU: displaySensorPermissionRequest\n(Required for automatic obstacle detection)
+    
+    alt User Grants Sensor Permission
+        RU -> PM: grantSensorPermission
+        PM -> BBP: sensorPermissionGranted
+    else User Denies Sensor Permission
+        RU -> PM: denySensorPermission
+        PM -> BBP: sensorPermissionDenied
+        BBP -> RU: displayError\n(Sensors mandatory for automatic detection)
+    end
+end
+
+BBP -> GPS: initializeGPSTracking
+GPS -> BBP: gpsInitialized
+
+BBP -> Sensor: initializeSensorCollection
+Sensor -> BBP: sensorsInitialized
+
+BBP -> BBP: startBackgroundRecording
+
+BBP -> RU: displayStopRecordingButton
+
+note over RU: RU starts cycling
+
+loop During Trip
+    GPS -> BBP: sendGPSCoordinates(latitude, longitude)
+    
+    Sensor -> BBP: sendSensorData(accelerometer, gyroscope)
+    BBP -> BBP: detectObstaclesAutomatically
+    
+    BBP -> BBP: storeTripDataTemporarily
+end
+
+note over RU: RU finishes cycling
+
+RU -> BBP: tapStopRecordingButton
+
+BBP -> GPS: stopGPSTracking
+GPS -> BBP: trackingStopped
+
+BBP -> Sensor: stopSensorCollection
+Sensor -> BBP: collectionStopped
+
+BBP -> BBP: processCollectedData
+BBP -> BBP: calculateTripStatistics
+
+BBP -> Weather: requestWeatherData(tripDate, tripTime, tripLocation)
+
+alt Weather Service Responds
+    Weather -> BBP: returnWeatherData(temperature, windSpeed, conditions)
+    BBP -> BBP: attachWeatherDataToTrip
+else Weather Service Unavailable
+    Weather --> BBP: serviceUnavailable
+    BBP -> BBP: saveTripWithoutWeather
+end
+
+BBP -> RU: displayTripSummary(distance, speed, duration, obstacles, weather)
+
+BBP -> RU: displayInitialOptions(reviewAndEdit, discard)
+
+alt User Chooses to Discard
+    RU -> BBP: selectDiscard
+    BBP -> BBP: deleteTempData
+    BBP -> RU: confirmDiscarded
+end
+
+alt User Chooses to Review and Edit
+    RU -> BBP: selectReviewAndEdit
+    
+    BBP -> RU: displayReviewScreen(originAddress, destinationAddress, pathStatus, detectedObstacles)
+    
+    RU -> BBP: editTripData(modifiedOrigin, modifiedDestination, confirmedObstacles, pathStatus)
+    
+    BBP -> BBP: updateTripData
+    
+    BBP -> RU: displaySaveOptions
+    
+    alt Save as Personal Trip Only
+        RU -> BBP: selectSaveAsPersonalTrip
+        BBP -> DB: storeTripData(tripData, weatherData)
+        DB -> BBP: tripSaved
+        BBP -> RU: confirmTripSaved
+        
+        opt User Decides to Publish Later
+            RU -> BBP: selectPublishSavedTrip
+            BBP -> DB: publishPathData(pathData, weatherData)
+            DB -> BBP: pathPublished
+            BBP -> RU: confirmPathPublished
+        end
+    end
+    
+    alt Publish as Bike Path Only
+        RU -> BBP: selectPublishAsBikePath
+        BBP -> DB: publishPathData(pathData, weatherData)
+        DB -> BBP: pathPublished
+        BBP -> RU: confirmPathPublished
+    end
+    
+    alt Save AND Publish Simultaneously
+        RU -> BBP: selectSaveAndPublish
+        BBP -> DB: storeTripData(tripData, weatherData)
+        DB -> BBP: tripSaved
+        BBP -> DB: publishPathData(pathData, weatherData)
+        DB -> BBP: pathPublished
+        BBP -> RU: confirmTripSavedAndPublished
+    end
+end
+
+@enduml
