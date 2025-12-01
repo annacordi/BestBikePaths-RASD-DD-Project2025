@@ -1,0 +1,83 @@
+@startuml Registration Sequence Diagram with Permissions
+actor User
+participant "Registration\nPage" as RegPage
+participant "Validation\nService" as Validation
+participant "User\nService" as UserService
+database "Database" as DB
+participant "Email\nService" as Email
+
+User -> RegPage: Enter registration data
+activate RegPage
+
+RegPage -> Validation: Validate input data
+activate Validation
+
+alt Invalid data
+    Validation --> RegPage: Return validation errors
+    RegPage --> User: Show error messages
+else Valid data
+    Validation --> RegPage: Data valid
+    deactivate Validation
+    
+    RegPage -> UserService: Create user account
+    activate UserService
+    
+    UserService -> DB: Check if email exists
+    activate DB
+    
+    alt Email already exists
+        DB --> UserService: Email found
+        deactivate DB
+        UserService --> RegPage: Email already registered
+        RegPage --> User: Show error message
+    else Email not exists
+        DB --> UserService: Email available
+        deactivate DB
+        
+        UserService -> DB: Save user data
+        activate DB
+        DB --> UserService: User saved
+        deactivate DB
+        
+        UserService --> RegPage: User created successfully
+        deactivate UserService
+        
+        RegPage --> User: Show permissions\nconfiguration screen
+        
+        User -> RegPage: Select permission preferences\n(GPS, Auto-detection, Sensors)
+        
+        RegPage -> UserService: Update permission settings
+        activate UserService
+        
+        UserService -> DB: Save permission preferences
+        activate DB
+        
+        alt Permission update fails
+            DB --> UserService: Update failed
+            deactivate DB
+            UserService --> RegPage: Permission update error
+            RegPage --> User: Show warning\n(Can configure later)
+        else Permission update succeeds
+            DB --> UserService: Permissions saved
+            deactivate DB
+            UserService --> RegPage: Permissions updated
+            deactivate UserService
+        end
+        
+        RegPage -> UserService: Request verification email
+        activate UserService
+        
+        UserService -> Email: Send verification email
+        activate Email
+        Email --> UserService: Email sent
+        deactivate Email
+        
+        UserService --> RegPage: Verification email sent
+        deactivate UserService
+        
+        RegPage --> User: Show success message\n(Check email)
+        deactivate RegPage
+    end
+end
+
+@enduml
