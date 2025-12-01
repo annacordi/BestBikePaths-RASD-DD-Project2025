@@ -1,0 +1,112 @@
+@startuml
+title Automated Path Detection - Sequence Diagram
+
+actor "Registered User" as RU
+participant "BBP" as BBP
+participant "Motion Detection\nService" as MDS
+participant "GPS Tracking\nService" as GPS
+participant "Obstacle Detection\nService" as ODS
+participant "Weather Service" as WS
+database "Database" as DB
+
+== Automatic Detection Phase ==
+activate BBP
+BBP -> MDS: activate motion detection
+activate MDS
+MDS -> MDS: analyze user's speed
+alt speed indicates biking activity
+    MDS -> BBP: biking detected
+    BBP -> GPS: start GPS tracking
+    activate GPS
+    
+    alt sensors permission enabled
+        BBP -> ODS: start obstacle detection
+        activate ODS
+    end
+    
+    loop while user is biking
+        GPS -> GPS: collect GPS coordinates
+        
+        opt sensors enabled
+            ODS -> ODS: read accelerometer\nand gyroscope data
+            alt significant movements detected
+                ODS -> ODS: record location and\nanomaly type
+            end
+        end
+    end
+    
+    alt speed decreases
+        BBP -> GPS: stop GPS tracking
+        deactivate GPS
+        
+        opt sensors were enabled
+            BBP -> ODS: stop obstacle detection
+            deactivate ODS
+        end
+    end
+    
+    BBP -> BBP: process collected data\nand calculate statistics
+    
+    BBP -> WS: request meteorological data\n(date, time, location)
+    activate WS
+    alt weather service responds
+        WS --> BBP: meteorological information
+        BBP -> BBP: store weather data\nwith trip
+    end
+    deactivate WS
+    
+    BBP -> RU: display trip summary\n(distance, speed, duration,\nobstacles, weather)
+    deactivate MDS
+    
+    == Initial Decision ==
+    BBP -> RU: display options:\n"Review&Edit" or "Discard"
+    RU -> BBP: select option
+    
+    alt Discard
+        BBP -> BBP: delete temporary trip data
+        BBP -> RU: confirm deletion
+        
+    else Review&Edit
+        == Review&Edit Phase ==
+        BBP -> RU: display review screen\n(origin, destination, path status,\ndetected obstacles)
+        
+        RU -> BBP: modify data\n(addresses, obstacles, path status)
+        BBP -> BBP: update trip data with\nuser's modifications
+        
+        == Save and Publish Options ==
+        BBP -> RU: display save/publish options:\n- Save as Trip\n- Publish as Bike Path\n- Save&Publish
+        
+        RU -> BBP: select action
+        
+        alt Save as Trip
+            BBP -> DB: store trip data in\npersonal trip history
+            activate DB
+            DB --> BBP: confirm save
+            deactivate DB
+            BBP -> RU: confirm operation
+            note right: RU can optionally\npublish later
+            
+        else Publish as Bike Path
+            BBP -> BBP: calculate trip score
+            BBP -> DB: publish as bike path
+            activate DB
+            DB --> BBP: confirm publication
+            deactivate DB
+            BBP -> RU: confirm operation
+            
+        else Save&Publish
+            BBP -> DB: save trip data in\npersonal trip history
+            activate DB
+            DB --> BBP: confirm save
+            BBP -> BBP: calculate trip score
+            BBP -> DB: publish as bike path
+            DB --> BBP: confirm publication
+            deactivate DB
+            BBP -> RU: confirm operation
+        end
+    end
+end
+
+deactivate BBP
+
+@enduml
