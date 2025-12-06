@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_2" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.41.0">
+  <collaboration id="Collaboration_ManualPathInsertion">
+    <participant id="Participant_RegisteredUser" name="Registered User" processRef="Process_RegisteredUser" />
+    <participant id="Participant_BBPSystem" name="BBP System" processRef="Process_BBPSystem" />
+    <messageFlow id="MessageFlow_PathData" sourceRef="Task_SubmitPathData" targetRef="Event_ReceivePathData" />
+    <messageFlow id="MessageFlow_ValidationResult" sourceRef="Task_ValidatePathData" targetRef="Event_ReceiveValidation" />
+    <messageFlow id="MessageFlow_Confirmation" sourceRef="Task_SendConfirmation" targetRef="Event_ReceiveConfirmation" />
+    <messageFlow id="Flow_1uuphcr" sourceRef="Event_SendDiscardRequest" targetRef="Event_ReceiveDiscardRequest" />
+    <messageFlow id="Flow_0urhx8p" sourceRef="Event_SendSaveAndPublishRequest" targetRef="Event_ReceiveSaveAndPublishRequest" />
+    <messageFlow id="Flow_12wajxd" sourceRef="Event_SendPublishRequest" targetRef="Event_ReceivePublishRequest" />
+    <messageFlow id="Flow_0r1xoez" sourceRef="Event_SendSaveRequest" targetRef="Event_ReceiveSaveRequest" />
+    <messageFlow id="Flow_12cp517" sourceRef="Event_SendSuccess" targetRef="Event_01k9vd1" />
+  </collaboration>
+  <process id="Process_RegisteredUser" name="Registered User Process" isExecutable="false">
+    <sequenceFlow id="Flow_ValidationFail_Retry" sourceRef="Gateway_RetryOrCancel" targetRef="Task_SelectPathRoute" />
+    <startEvent id="StartEvent_RU" name="RU want to manual insert path">
+      <outgoing>Flow_Start_Task1</outgoing>
+    </startEvent>
+    <task id="Task_SelectPathRoute" name="Insert origin and destination">
+      <incoming>Flow_Start_Task1</incoming>
+      <incoming>Flow_ValidationFail_Retry</incoming>
+      <outgoing>Flow_Task1_Task2</outgoing>
+    </task>
+    <task id="Task_AddPathDetails" name="Add path details: difficulty, surface type">
+      <incoming>Flow_0lqf5ia</incoming>
+      <outgoing>Flow_Task2_Gateway1</outgoing>
+    </task>
+    <task id="Activity_1c37fw7" name="Select path route on map">
+      <incoming>Flow_Task1_Task2</incoming>
+      <outgoing>Flow_0lqf5ia</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_ReportObstacles" name="Report obstacles?">
+      <incoming>Flow_Task2_Gateway1</incoming>
+      <outgoing>Flow_Gateway1_Yes</outgoing>
+      <outgoing>Flow_Gateway1_No</outgoing>
+    </exclusiveGateway>
+    <task id="Task_ReportObstacles" name="Report obstacles (type, address)">
+      <incoming>Flow_Gateway1_Yes</incoming>
+      <outgoing>Flow_111ac29</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_ValidationCheck" name="Path valid?">
+      <incoming>Flow_Wait1_Gateway2</incoming>
+      <outgoing>Flow_1wfb5n5</outgoing>
+      <outgoing>Flow_0c2jfp5</outgoing>
+    </exclusiveGateway>
+    <task id="Task_SubmitPathData" name="Submit path data">
+      <incoming>Flow_Merge1_Task3</incoming>
+      <outgoing>Flow_Task3_Wait1</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge1" name="">
+      <incoming>Flow_Gateway1_No</incoming>
+      <incoming>Flow_111ac29</incoming>
+      <outgoing>Flow_Merge1_Task3</outgoing>
+    </exclusiveGateway>
+    <intermediateCatchEvent id="Event_ReceiveValidation" name="Receive validation result">
+      <incoming>Flow_Task3_Wait1</incoming>
+      <outgoing>Flow_Wait1_Gateway2</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_ReviewErrors" name="Review validation errors">
+      <incoming>Flow_1wfb5n5</incoming>
+      <outgoing>Flow_Errors_Gateway3</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveConfirmation" name="Receive confirmation">
+      <incoming>Flow_0c2jfp5</incoming>
+      <outgoing>Flow_0hrowgt</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Activity_0mf99ju" name="Path inserted successfully">
+      <incoming>Flow_0hrowgt</incoming>
+      <outgoing>Flow_0in3da7</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_RetryOrCancel" name="Retry or cancel?">
+      <incoming>Flow_Errors_Gateway3</incoming>
+      <outgoing>Flow_Gateway3_Retry</outgoing>
+      <outgoing>Flow_Gateway3_Cancel</outgoing>
+    </exclusiveGateway>
+    <exclusiveGateway id="Gateway_Decision" name="Action?">
+      <incoming>Flow_0in3da7</incoming>
+      <outgoing>Flow_SaveOnly</outgoing>
+      <outgoing>Flow_PublishOnly</outgoing>
+      <outgoing>Flow_SaveAndPublish</outgoing>
+      <outgoing>Flow_Discard</outgoing>
+    </exclusiveGateway>
+    <intermediateThrowEvent id="Event_SendDiscardRequest" name="Send discard request">
+      <incoming>Flow_Discard</incoming>
+      <outgoing>Flow_0wkf3nt</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_16brqyb" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="Event_SendSaveRequest" name="Send save request">
+      <incoming>Flow_SaveOnly</incoming>
+      <outgoing>Flow_1y2i2sf</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1od4vu9" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="Event_SendPublishRequest" name="Send publish request">
+      <incoming>Flow_PublishOnly</incoming>
+      <outgoing>Flow_0s6ah2f</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0l3yf2q" />
+    </intermediateThrowEvent>
+    <intermediateThrowEvent id="Event_SendSaveAndPublishRequest" name="Send request">
+      <incoming>Flow_SaveAndPublish</incoming>
+      <outgoing>Flow_1iev8sw</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1i2dbu5" />
+    </intermediateThrowEvent>
+    <intermediateCatchEvent id="Event_01k9vd1" name="Receive success confirmation">
+      <incoming>Flow_1bftm0l</incoming>
+      <outgoing>Flow_0c7eemt</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0kcrfgt" />
+    </intermediateCatchEvent>
+    <endEvent id="Event_0uy0scy" name="End session">
+      <incoming>Flow_0c7eemt</incoming>
+    </endEvent>
+    <exclusiveGateway id="Gateway_0zyb6qi" name="">
+      <incoming>Flow_0wkf3nt</incoming>
+      <incoming>Flow_1y2i2sf</incoming>
+      <incoming>Flow_0s6ah2f</incoming>
+      <incoming>Flow_1iev8sw</incoming>
+      <outgoing>Flow_1bftm0l</outgoing>
+    </exclusiveGateway>
+    <endEvent id="EndEvent_Cancelled" name="Insertion cancelled">
+      <incoming>Flow_Gateway3_Cancel</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_Start_Task1" sourceRef="StartEvent_RU" targetRef="Task_SelectPathRoute" />
+    <sequenceFlow id="Flow_Gateway3_Retry" name="Retry" sourceRef="Gateway_RetryOrCancel" targetRef="Task_SelectPathRoute" />
+    <sequenceFlow id="Flow_Task1_Task2" sourceRef="Task_SelectPathRoute" targetRef="Activity_1c37fw7" />
+    <sequenceFlow id="Flow_0lqf5ia" sourceRef="Activity_1c37fw7" targetRef="Task_AddPathDetails" />
+    <sequenceFlow id="Flow_Task2_Gateway1" sourceRef="Task_AddPathDetails" targetRef="Gateway_ReportObstacles" />
+    <sequenceFlow id="Flow_Gateway1_Yes" name="Yes" sourceRef="Gateway_ReportObstacles" targetRef="Task_ReportObstacles" />
+    <sequenceFlow id="Flow_Gateway1_No" name="No" sourceRef="Gateway_ReportObstacles" targetRef="Gateway_Merge1" />
+    <sequenceFlow id="Flow_111ac29" sourceRef="Task_ReportObstacles" targetRef="Gateway_Merge1" />
+    <sequenceFlow id="Flow_Wait1_Gateway2" sourceRef="Event_ReceiveValidation" targetRef="Gateway_ValidationCheck" />
+    <sequenceFlow id="Flow_1wfb5n5" name="Invalid" sourceRef="Gateway_ValidationCheck" targetRef="Task_ReviewErrors" />
+    <sequenceFlow id="Flow_0c2jfp5" name="Valid" sourceRef="Gateway_ValidationCheck" targetRef="Event_ReceiveConfirmation" />
+    <sequenceFlow id="Flow_Merge1_Task3" sourceRef="Gateway_Merge1" targetRef="Task_SubmitPathData" />
+    <sequenceFlow id="Flow_Task3_Wait1" sourceRef="Task_SubmitPathData" targetRef="Event_ReceiveValidation" />
+    <sequenceFlow id="Flow_Errors_Gateway3" sourceRef="Task_ReviewErrors" targetRef="Gateway_RetryOrCancel" />
+    <sequenceFlow id="Flow_0hrowgt" sourceRef="Event_ReceiveConfirmation" targetRef="Activity_0mf99ju" />
+    <sequenceFlow id="Flow_0in3da7" sourceRef="Activity_0mf99ju" targetRef="Gateway_Decision" />
+    <sequenceFlow id="Flow_Gateway3_Cancel" name="Cancel" sourceRef="Gateway_RetryOrCancel" targetRef="EndEvent_Cancelled" />
+    <sequenceFlow id="Flow_SaveOnly" name="Save as Trip only" sourceRef="Gateway_Decision" targetRef="Event_SendSaveRequest">
+      <conditionExpression xsi:type="tFormalExpression">#{decision == 'saveOnly'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_PublishOnly" name="Publish as BikePath only" sourceRef="Gateway_Decision" targetRef="Event_SendPublishRequest">
+      <conditionExpression xsi:type="tFormalExpression">#{decision == 'publishOnly'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_SaveAndPublish" name="Save &#38; Publish" sourceRef="Gateway_Decision" targetRef="Event_SendSaveAndPublishRequest">
+      <conditionExpression xsi:type="tFormalExpression">#{decision == 'saveAndPublish'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_Discard" name="Discard" sourceRef="Gateway_Decision" targetRef="Event_SendDiscardRequest">
+      <conditionExpression xsi:type="tFormalExpression">#{decision == 'discard'}</conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="Flow_0wkf3nt" sourceRef="Event_SendDiscardRequest" targetRef="Gateway_0zyb6qi" />
+    <sequenceFlow id="Flow_1y2i2sf" sourceRef="Event_SendSaveRequest" targetRef="Gateway_0zyb6qi" />
+    <sequenceFlow id="Flow_0s6ah2f" sourceRef="Event_SendPublishRequest" targetRef="Gateway_0zyb6qi" />
+    <sequenceFlow id="Flow_1iev8sw" sourceRef="Event_SendSaveAndPublishRequest" targetRef="Gateway_0zyb6qi" />
+    <sequenceFlow id="Flow_1bftm0l" sourceRef="Gateway_0zyb6qi" targetRef="Event_01k9vd1" />
+    <sequenceFlow id="Flow_0c7eemt" sourceRef="Event_01k9vd1" targetRef="Event_0uy0scy" />
+  </process>
+  <process id="Process_BBPSystem" name="BBP System Process" isExecutable="false">
+    <intermediateCatchEvent id="Event_ReceivePathData" name="Receive path data">
+      <outgoing>Flow_Start_Validate</outgoing>
+      <messageEventDefinition />
+    </intermediateCatchEvent>
+    <task id="Task_ValidatePathData" name="Validate path data (completeness, format, coordinates)">
+      <incoming>Flow_Start_Validate</incoming>
+      <outgoing>Flow_Validate_Gateway1</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_IsValid" name="Data valid?">
+      <incoming>Flow_Validate_Gateway1</incoming>
+      <outgoing>Flow_Gateway1_Invalid</outgoing>
+      <outgoing>Flow_Gateway1_Valid</outgoing>
+    </exclusiveGateway>
+    <task id="Task_SendValidationResult" name="Send validation errors">
+      <incoming>Flow_Gateway1_Invalid</incoming>
+      <outgoing>Flow_Invalid_End</outgoing>
+    </task>
+    <endEvent id="EndEvent_ValidationFailed" name="Validation failed">
+      <incoming>Flow_Invalid_End</incoming>
+    </endEvent>
+    <task id="Task_CalculatePathMetrics" name="Calculate path metrics (distance, elevation)">
+      <incoming>Flow_Gateway1_Valid</incoming>
+      <outgoing>Flow_Calc_Gateway2</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_HasObstacles" name="Obstacles reported?">
+      <incoming>Flow_Calc_Gateway2</incoming>
+      <outgoing>Flow_Gateway2_Yes</outgoing>
+      <outgoing>Flow_Gateway2_No</outgoing>
+    </exclusiveGateway>
+    <task id="Task_ProcessObstacles" name="Process and store obstacle information">
+      <incoming>Flow_Gateway2_Yes</incoming>
+      <outgoing>Flow_Obstacles_Merge2</outgoing>
+    </task>
+    <task id="Task_UpdateSearchIndex" name="Update search index (make path discoverable)">
+      <incoming>Flow_Save_Index</incoming>
+      <outgoing>Flow_Index_Confirm</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge2" name="">
+      <incoming>Flow_Gateway2_No</incoming>
+      <incoming>Flow_Obstacles_Merge2</incoming>
+      <outgoing>Flow_Merge2_Save</outgoing>
+    </exclusiveGateway>
+    <task id="Task_SavePathToDatabase" name="Save path in database">
+      <incoming>Flow_Merge2_Save</incoming>
+      <outgoing>Flow_Save_Index</outgoing>
+    </task>
+    <task id="Task_SendConfirmation" name="Send success confirmation">
+      <incoming>Flow_Index_Confirm</incoming>
+      <outgoing>Flow_0109vgq</outgoing>
+    </task>
+    <intermediateCatchEvent id="Event_ReceiveDiscardRequest" name="Receive discard request">
+      <incoming>Flow_0j2x0o9</incoming>
+      <outgoing>Flow_B22</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0zmbq9o" />
+    </intermediateCatchEvent>
+    <task id="Task_DeleteData" name="Delete data">
+      <incoming>Flow_B22</incoming>
+      <outgoing>Flow_1o1pdc3</outgoing>
+    </task>
+    <exclusiveGateway id="Gateway_Merge" name="">
+      <incoming>Flow_1o1pdc3</incoming>
+      <incoming>Flow_B14</incoming>
+      <incoming>Flow_1u437nb</incoming>
+      <outgoing>Flow_B24</outgoing>
+    </exclusiveGateway>
+    <intermediateCatchEvent id="Event_ReceiveSaveRequest" name="Receive save request">
+      <incoming>Flow_1y304q6</incoming>
+      <outgoing>Flow_0eo2w5e</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0no6vft" />
+    </intermediateCatchEvent>
+    <task id="Task_FetchWeatherData" name="Fetch weather data from external service (if available)">
+      <incoming>Flow_0eo2w5e</incoming>
+      <outgoing>Flow_1x41gr1</outgoing>
+    </task>
+    <task id="Task_SavePersonalTrip" name="Save as personal Trip in database">
+      <incoming>Flow_1x41gr1</incoming>
+      <outgoing>Flow_1u437nb</outgoing>
+    </task>
+    <eventBasedGateway id="Gateway_0cck0sv" name="">
+      <incoming>Flow_0109vgq</incoming>
+      <outgoing>Flow_1y304q6</outgoing>
+      <outgoing>Flow_1s9qotw</outgoing>
+      <outgoing>Flow_1bk776b</outgoing>
+      <outgoing>Flow_0j2x0o9</outgoing>
+    </eventBasedGateway>
+    <intermediateCatchEvent id="Event_ReceiveSaveAndPublishRequest" name="Receive save&#38;publish request">
+      <incoming>Flow_1bk776b</incoming>
+      <outgoing>Flow_0voqfcg</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0586mw3" />
+    </intermediateCatchEvent>
+    <task id="Activity_1oq88y0" name="Fetch weather data from external service (if available)">
+      <incoming>Flow_0voqfcg</incoming>
+      <outgoing>Flow_0elhn1g</outgoing>
+    </task>
+    <parallelGateway id="Gateway_Split">
+      <incoming>Flow_0elhn1g</incoming>
+      <outgoing>Flow_1xg03j6</outgoing>
+      <outgoing>Flow_0d2zdcu</outgoing>
+    </parallelGateway>
+    <intermediateCatchEvent id="Event_ReceivePublishRequest" name="Receive publish request">
+      <incoming>Flow_1s9qotw</incoming>
+      <outgoing>Flow_0j1ef3r</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_0el0fn3" />
+    </intermediateCatchEvent>
+    <task id="Task_CalculateScore" name="Calculate path score">
+      <incoming>Flow_0j1ef3r</incoming>
+      <outgoing>Flow_B13</outgoing>
+    </task>
+    <task id="Activity_1gi6h0t" name="Save as personal Trip in database">
+      <incoming>Flow_1xg03j6</incoming>
+      <outgoing>Flow_0i2xm5g</outgoing>
+    </task>
+    <task id="Task_PublishBikePath" name="Publish as BikePath">
+      <incoming>Flow_B13</incoming>
+      <incoming>Flow_1puett9</incoming>
+      <outgoing>Flow_B14</outgoing>
+    </task>
+    <task id="Activity_0uact48" name="Calculate path score">
+      <incoming>Flow_0d2zdcu</incoming>
+      <outgoing>Flow_1jkulis</outgoing>
+    </task>
+    <task id="Activity_0wgaky2" name="Publish as BikePath">
+      <incoming>Flow_1jkulis</incoming>
+      <outgoing>Flow_0xj9ojo</outgoing>
+    </task>
+    <parallelGateway id="Gateway_11dpqbg">
+      <incoming>Flow_0i2xm5g</incoming>
+      <incoming>Flow_0xj9ojo</incoming>
+      <outgoing>Flow_1puett9</outgoing>
+    </parallelGateway>
+    <intermediateThrowEvent id="Event_SendSuccess" name="Send success confirmation">
+      <incoming>Flow_B24</incoming>
+      <outgoing>Flow_B25</outgoing>
+      <messageEventDefinition id="MessageEventDefinition_1jk5ai6" />
+    </intermediateThrowEvent>
+    <endEvent id="EndEvent_BBP" name="End session">
+      <incoming>Flow_B25</incoming>
+    </endEvent>
+    <sequenceFlow id="Flow_Start_Validate" sourceRef="Event_ReceivePathData" targetRef="Task_ValidatePathData" />
+    <sequenceFlow id="Flow_Validate_Gateway1" sourceRef="Task_ValidatePathData" targetRef="Gateway_IsValid" />
+    <sequenceFlow id="Flow_Gateway1_Invalid" name="Invalid" sourceRef="Gateway_IsValid" targetRef="Task_SendValidationResult" />
+    <sequenceFlow id="Flow_Gateway1_Valid" name="Valid" sourceRef="Gateway_IsValid" targetRef="Task_CalculatePathMetrics" />
+    <sequenceFlow id="Flow_Invalid_End" sourceRef="Task_SendValidationResult" targetRef="EndEvent_ValidationFailed" />
+    <sequenceFlow id="Flow_Calc_Gateway2" sourceRef="Task_CalculatePathMetrics" targetRef="Gateway_HasObstacles" />
+    <sequenceFlow id="Flow_Gateway2_Yes" name="Yes" sourceRef="Gateway_HasObstacles" targetRef="Task_ProcessObstacles" />
+    <sequenceFlow id="Flow_Gateway2_No" name="No" sourceRef="Gateway_HasObstacles" targetRef="Gateway_Merge2" />
+    <sequenceFlow id="Flow_Obstacles_Merge2" sourceRef="Task_ProcessObstacles" targetRef="Gateway_Merge2" />
+    <sequenceFlow id="Flow_Save_Index" sourceRef="Task_SavePathToDatabase" targetRef="Task_UpdateSearchIndex" />
+    <sequenceFlow id="Flow_Index_Confirm" sourceRef="Task_UpdateSearchIndex" targetRef="Task_SendConfirmation" />
+    <sequenceFlow id="Flow_Merge2_Save" sourceRef="Gateway_Merge2" targetRef="Task_SavePathToDatabase" />
+    <sequenceFlow id="Flow_0109vgq" sourceRef="Task_SendConfirmation" targetRef="Gateway_0cck0sv" />
+    <sequenceFlow id="Flow_0j2x0o9" sourceRef="Gateway_0cck0sv" targetRef="Event_ReceiveDiscardRequest" />
+    <sequenceFlow id="Flow_B22" sourceRef="Event_ReceiveDiscardRequest" targetRef="Task_DeleteData" />
+    <sequenceFlow id="Flow_1o1pdc3" sourceRef="Task_DeleteData" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_B14" sourceRef="Task_PublishBikePath" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_1u437nb" sourceRef="Task_SavePersonalTrip" targetRef="Gateway_Merge" />
+    <sequenceFlow id="Flow_B24" sourceRef="Gateway_Merge" targetRef="Event_SendSuccess" />
+    <sequenceFlow id="Flow_1y304q6" sourceRef="Gateway_0cck0sv" targetRef="Event_ReceiveSaveRequest" />
+    <sequenceFlow id="Flow_0eo2w5e" sourceRef="Event_ReceiveSaveRequest" targetRef="Task_FetchWeatherData" />
+    <sequenceFlow id="Flow_1x41gr1" sourceRef="Task_FetchWeatherData" targetRef="Task_SavePersonalTrip" />
+    <sequenceFlow id="Flow_1s9qotw" sourceRef="Gateway_0cck0sv" targetRef="Event_ReceivePublishRequest" />
+    <sequenceFlow id="Flow_1bk776b" sourceRef="Gateway_0cck0sv" targetRef="Event_ReceiveSaveAndPublishRequest" />
+    <sequenceFlow id="Flow_0voqfcg" sourceRef="Event_ReceiveSaveAndPublishRequest" targetRef="Activity_1oq88y0" />
+    <sequenceFlow id="Flow_0elhn1g" sourceRef="Activity_1oq88y0" targetRef="Gateway_Split" />
+    <sequenceFlow id="Flow_1xg03j6" sourceRef="Gateway_Split" targetRef="Activity_1gi6h0t" />
+    <sequenceFlow id="Flow_0d2zdcu" sourceRef="Gateway_Split" targetRef="Activity_0uact48" />
+    <sequenceFlow id="Flow_0j1ef3r" sourceRef="Event_ReceivePublishRequest" targetRef="Task_CalculateScore" />
+    <sequenceFlow id="Flow_B13" sourceRef="Task_CalculateScore" targetRef="Task_PublishBikePath" />
+    <sequenceFlow id="Flow_0i2xm5g" sourceRef="Activity_1gi6h0t" targetRef="Gateway_11dpqbg" />
+    <sequenceFlow id="Flow_1puett9" sourceRef="Gateway_11dpqbg" targetRef="Task_PublishBikePath" />
+    <sequenceFlow id="Flow_1jkulis" sourceRef="Activity_0uact48" targetRef="Activity_0wgaky2" />
+    <sequenceFlow id="Flow_0xj9ojo" sourceRef="Activity_0wgaky2" targetRef="Gateway_11dpqbg" />
+    <sequenceFlow id="Flow_B25" sourceRef="Event_SendSuccess" targetRef="EndEvent_BBP" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_ManualPathInsertion">
+      <bpmndi:BPMNShape id="Participant_RegisteredUser_di" bpmnElement="Participant_RegisteredUser" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="3200" height="570" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_RU_di" bpmnElement="StartEvent_RU">
+        <dc:Bounds x="230" y="382" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="215" y="425" width="67" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SelectPathRoute_di" bpmnElement="Task_SelectPathRoute">
+        <dc:Bounds x="320" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_AddPathDetails_di" bpmnElement="Task_AddPathDetails">
+        <dc:Bounds x="610" y="360" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0q8qzhn" bpmnElement="Activity_1c37fw7">
+        <dc:Bounds x="463" y="360" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ReportObstacles_di" bpmnElement="Gateway_ReportObstacles" isMarkerVisible="true">
+        <dc:Bounds x="805" y="375" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="735" y="373" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReportObstacles_di" bpmnElement="Task_ReportObstacles">
+        <dc:Bounds x="900" y="290" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_ValidationCheck_di" bpmnElement="Gateway_ValidationCheck" isMarkerVisible="true">
+        <dc:Bounds x="1215" y="445" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1275" y="463" width="55" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SubmitPathData_di" bpmnElement="Task_SubmitPathData">
+        <dc:Bounds x="1010" y="430" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge1_di" bpmnElement="Gateway_Merge1" isMarkerVisible="true">
+        <dc:Bounds x="935" y="445" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveValidation_di" bpmnElement="Event_ReceiveValidation">
+        <dc:Bounds x="1152" y="452" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1125" y="415" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReviewErrors_di" bpmnElement="Task_ReviewErrors">
+        <dc:Bounds x="1320" y="290" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceiveConfirmation_di" bpmnElement="Event_ReceiveConfirmation">
+        <dc:Bounds x="1352" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1340" y="505" width="60" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0mf99ju_di" bpmnElement="Activity_0mf99ju">
+        <dc:Bounds x="1440" y="520" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_RetryOrCancel_di" bpmnElement="Gateway_RetryOrCancel" isMarkerVisible="true">
+        <dc:Bounds x="1555" y="265" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1540" y="325" width="81" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1rfe44f" bpmnElement="Gateway_Decision" isMarkerVisible="true">
+        <dc:Bounds x="1756" y="435" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1730" y="422" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1hoga63" bpmnElement="Event_SendDiscardRequest">
+        <dc:Bounds x="1973" y="594" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1958" y="567" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1fapksv" bpmnElement="Event_SendSaveRequest">
+        <dc:Bounds x="2222" y="344" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2214" y="314" width="52" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0tkohgu" bpmnElement="Event_SendPublishRequest">
+        <dc:Bounds x="2150" y="442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2136" y="412" width="64" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0nghz4y" bpmnElement="Event_SendSaveAndPublishRequest">
+        <dc:Bounds x="2081" y="533" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2066" y="516" width="66" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1hg115r" bpmnElement="Event_01k9vd1">
+        <dc:Bounds x="2733" y="442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2759" y="478" width="83" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1j2ekfv" bpmnElement="Event_0uy0scy">
+        <dc:Bounds x="3073" y="442" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3062" y="485" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0j2dx4e" bpmnElement="Gateway_0zyb6qi" isMarkerVisible="true">
+        <dc:Bounds x="2596" y="435" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_Cancelled_di" bpmnElement="EndEvent_Cancelled">
+        <dc:Bounds x="1674" y="272" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1669" y="315" width="47" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Task1_di" bpmnElement="Flow_Start_Task1">
+        <di:waypoint x="266" y="400" />
+        <di:waypoint x="320" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task1_Task2_di" bpmnElement="Flow_Task1_Task2">
+        <di:waypoint x="420" y="400" />
+        <di:waypoint x="463" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task2_Gateway1_di" bpmnElement="Flow_Task2_Gateway1">
+        <di:waypoint x="730" y="400" />
+        <di:waypoint x="805" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway1_Yes_di" bpmnElement="Flow_Gateway1_Yes">
+        <di:waypoint x="830" y="375" />
+        <di:waypoint x="830" y="330" />
+        <di:waypoint x="900" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="836" y="343" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway1_No_di" bpmnElement="Flow_Gateway1_No">
+        <di:waypoint x="830" y="425" />
+        <di:waypoint x="830" y="470" />
+        <di:waypoint x="935" y="470" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="838" y="445" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge1_Task3_di" bpmnElement="Flow_Merge1_Task3">
+        <di:waypoint x="985" y="470" />
+        <di:waypoint x="1010" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Task3_Wait1_di" bpmnElement="Flow_Task3_Wait1">
+        <di:waypoint x="1110" y="470" />
+        <di:waypoint x="1152" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Wait1_Gateway2_di" bpmnElement="Flow_Wait1_Gateway2">
+        <di:waypoint x="1188" y="470" />
+        <di:waypoint x="1215" y="470" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Errors_Gateway3_di" bpmnElement="Flow_Errors_Gateway3">
+        <di:waypoint x="1420" y="330" />
+        <di:waypoint x="1488" y="330" />
+        <di:waypoint x="1488" y="290" />
+        <di:waypoint x="1555" y="290" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway3_Retry_di" bpmnElement="Flow_Gateway3_Retry">
+        <di:waypoint x="1580" y="265" />
+        <di:waypoint x="1580" y="240" />
+        <di:waypoint x="370" y="240" />
+        <di:waypoint x="370" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1546" y="223" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway3_Cancel_di" bpmnElement="Flow_Gateway3_Cancel">
+        <di:waypoint x="1605" y="290" />
+        <di:waypoint x="1674" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1599" y="276" width="35" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0lqf5ia_di" bpmnElement="Flow_0lqf5ia">
+        <di:waypoint x="563" y="400" />
+        <di:waypoint x="610" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_111ac29_di" bpmnElement="Flow_111ac29">
+        <di:waypoint x="960" y="370" />
+        <di:waypoint x="960" y="445" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wfb5n5_di" bpmnElement="Flow_1wfb5n5">
+        <di:waypoint x="1240" y="445" />
+        <di:waypoint x="1240" y="330" />
+        <di:waypoint x="1320" y="330" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1244" y="378" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0c2jfp5_di" bpmnElement="Flow_0c2jfp5">
+        <di:waypoint x="1240" y="495" />
+        <di:waypoint x="1240" y="560" />
+        <di:waypoint x="1352" y="560" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1243" y="518" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hrowgt_di" bpmnElement="Flow_0hrowgt">
+        <di:waypoint x="1388" y="560" />
+        <di:waypoint x="1440" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0in3da7_di" bpmnElement="Flow_0in3da7">
+        <di:waypoint x="1490" y="520" />
+        <di:waypoint x="1490" y="460" />
+        <di:waypoint x="1756" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_05s9i82" bpmnElement="Flow_SaveOnly">
+        <di:waypoint x="1781" y="435" />
+        <di:waypoint x="1781" y="362" />
+        <di:waypoint x="2222" y="362" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1888" y="345" width="85" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1j3htr4" bpmnElement="Flow_PublishOnly">
+        <di:waypoint x="1806" y="460" />
+        <di:waypoint x="2150" y="460" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1855" y="428" width="68" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_01g7k6y" bpmnElement="Flow_SaveAndPublish">
+        <di:waypoint x="1781" y="485" />
+        <di:waypoint x="1781" y="551" />
+        <di:waypoint x="2081" y="551" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1973" y="536" width="75" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1bd8ziz" bpmnElement="Flow_Discard">
+        <di:waypoint x="1781" y="485" />
+        <di:waypoint x="1781" y="612" />
+        <di:waypoint x="1973" y="612" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1838" y="595" width="38" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0lecgl0" bpmnElement="Flow_0wkf3nt">
+        <di:waypoint x="2009" y="612" />
+        <di:waypoint x="2621" y="612" />
+        <di:waypoint x="2621" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1ec7n4n" bpmnElement="Flow_1y2i2sf">
+        <di:waypoint x="2258" y="362" />
+        <di:waypoint x="2561" y="362" />
+        <di:waypoint x="2561" y="442" />
+        <di:waypoint x="2614" y="442" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_03nc4wk" bpmnElement="Flow_0s6ah2f">
+        <di:waypoint x="2186" y="460" />
+        <di:waypoint x="2596" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_04ao84i" bpmnElement="Flow_1iev8sw">
+        <di:waypoint x="2117" y="551" />
+        <di:waypoint x="2621" y="551" />
+        <di:waypoint x="2621" y="485" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_08z09h3" bpmnElement="Flow_1bftm0l">
+        <di:waypoint x="2646" y="460" />
+        <di:waypoint x="2733" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0bfbokr" bpmnElement="Flow_0c7eemt">
+        <di:waypoint x="2769" y="460" />
+        <di:waypoint x="3073" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_BBPSystem_di" bpmnElement="Participant_BBPSystem" isHorizontal="true">
+        <dc:Bounds x="170" y="710" width="3190" height="680" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_ReceivePathData_di" bpmnElement="Event_ReceivePathData">
+        <dc:Bounds x="634" y="1009" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="608" y="1052" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ValidatePathData_di" bpmnElement="Task_ValidatePathData">
+        <dc:Bounds x="720" y="987" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_IsValid_di" bpmnElement="Gateway_IsValid" isMarkerVisible="true">
+        <dc:Bounds x="890" y="1002" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="887" y="972" width="56" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendValidationResult_di" bpmnElement="Task_SendValidationResult">
+        <dc:Bounds x="855" y="1103" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_ValidationFailed_di" bpmnElement="EndEvent_ValidationFailed">
+        <dc:Bounds x="897" y="1211" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="877" y="1254" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CalculatePathMetrics_di" bpmnElement="Task_CalculatePathMetrics">
+        <dc:Bounds x="990" y="987" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_HasObstacles_di" bpmnElement="Gateway_HasObstacles" isMarkerVisible="true">
+        <dc:Bounds x="1160" y="1002" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1126" y="985" width="50" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProcessObstacles_di" bpmnElement="Task_ProcessObstacles">
+        <dc:Bounds x="1260" y="927" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_UpdateSearchIndex_di" bpmnElement="Task_UpdateSearchIndex">
+        <dc:Bounds x="1530" y="1057" width="120" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_Merge2_di" bpmnElement="Gateway_Merge2" isMarkerVisible="true">
+        <dc:Bounds x="1295" y="1072" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SavePathToDatabase_di" bpmnElement="Task_SavePathToDatabase">
+        <dc:Bounds x="1382" y="1057" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendConfirmation_di" bpmnElement="Task_SendConfirmation">
+        <dc:Bounds x="1687" y="1057" width="120" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0i77ou6" bpmnElement="Event_ReceiveDiscardRequest">
+        <dc:Bounds x="1973" y="1283" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1952" y="1326" width="79" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0ygfp5t" bpmnElement="Task_DeleteData">
+        <dc:Bounds x="2123" y="1261" width="140" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_13l6f1p" bpmnElement="Gateway_Merge" isMarkerVisible="true">
+        <dc:Bounds x="3088" y="1096" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0c8ojuz" bpmnElement="Event_ReceiveSaveRequest">
+        <dc:Bounds x="2220" y="892" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2204" y="938" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_17blbyc" bpmnElement="Task_FetchWeatherData">
+        <dc:Bounds x="2508" y="870" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1wwc43u" bpmnElement="Task_SavePersonalTrip">
+        <dc:Bounds x="2753" y="870" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1o7w8x3" bpmnElement="Gateway_0cck0sv">
+        <dc:Bounds x="1848" y="1072" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_064f7jo" bpmnElement="Event_ReceiveSaveAndPublishRequest">
+        <dc:Bounds x="2068" y="1079" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2054" y="1122" width="66" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0xlm5hv" bpmnElement="Activity_1oq88y0">
+        <dc:Bounds x="2198" y="1057" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0g46k9d" bpmnElement="Gateway_Split">
+        <dc:Bounds x="2373" y="1072" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_00mbzwl" bpmnElement="Event_ReceivePublishRequest">
+        <dc:Bounds x="2137" y="982" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2116" y="1028" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_07lmym8" bpmnElement="Task_CalculateScore">
+        <dc:Bounds x="2638" y="960" width="140" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1y3fwrl" bpmnElement="Activity_1gi6h0t">
+        <dc:Bounds x="2488" y="1057" width="140" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0kfu22c" bpmnElement="Task_PublishBikePath">
+        <dc:Bounds x="2898" y="960" width="140" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0fsbwa5" bpmnElement="Activity_0uact48">
+        <dc:Bounds x="2438" y="1150" width="140" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0c0kksb" bpmnElement="Activity_0wgaky2">
+        <dc:Bounds x="2623" y="1150" width="140" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_05opu25" bpmnElement="Gateway_11dpqbg">
+        <dc:Bounds x="2753" y="1072" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_10aabqc" bpmnElement="Event_SendSuccess">
+        <dc:Bounds x="3188" y="1103" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3172" y="1146" width="69" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0j6pzud" bpmnElement="EndEvent_BBP">
+        <dc:Bounds x="3300" y="1103" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="3288" y="1146" width="60" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_Start_Validate_di" bpmnElement="Flow_Start_Validate">
+        <di:waypoint x="670" y="1027" />
+        <di:waypoint x="720" y="1027" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Validate_Gateway1_di" bpmnElement="Flow_Validate_Gateway1">
+        <di:waypoint x="840" y="1027" />
+        <di:waypoint x="890" y="1027" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway1_Invalid_di" bpmnElement="Flow_Gateway1_Invalid">
+        <di:waypoint x="915" y="1052" />
+        <di:waypoint x="915" y="1103" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="920" y="1073" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway1_Valid_di" bpmnElement="Flow_Gateway1_Valid">
+        <di:waypoint x="940" y="1027" />
+        <di:waypoint x="990" y="1027" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="953" y="1009" width="24" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Invalid_End_di" bpmnElement="Flow_Invalid_End">
+        <di:waypoint x="915" y="1183" />
+        <di:waypoint x="915" y="1211" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Calc_Gateway2_di" bpmnElement="Flow_Calc_Gateway2">
+        <di:waypoint x="1110" y="1027" />
+        <di:waypoint x="1160" y="1027" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway2_Yes_di" bpmnElement="Flow_Gateway2_Yes">
+        <di:waypoint x="1185" y="1002" />
+        <di:waypoint x="1185" y="967" />
+        <di:waypoint x="1260" y="967" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1191" y="982" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Gateway2_No_di" bpmnElement="Flow_Gateway2_No">
+        <di:waypoint x="1185" y="1052" />
+        <di:waypoint x="1185" y="1097" />
+        <di:waypoint x="1295" y="1097" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1193" y="1072" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Obstacles_Merge2_di" bpmnElement="Flow_Obstacles_Merge2">
+        <di:waypoint x="1320" y="1007" />
+        <di:waypoint x="1320" y="1072" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Save_Index_di" bpmnElement="Flow_Save_Index">
+        <di:waypoint x="1502" y="1097" />
+        <di:waypoint x="1530" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Index_Confirm_di" bpmnElement="Flow_Index_Confirm">
+        <di:waypoint x="1650" y="1097" />
+        <di:waypoint x="1687" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Merge2_Save_di" bpmnElement="Flow_Merge2_Save">
+        <di:waypoint x="1345" y="1097" />
+        <di:waypoint x="1382" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0109vgq_di" bpmnElement="Flow_0109vgq">
+        <di:waypoint x="1807" y="1097" />
+        <di:waypoint x="1848" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0j2x0o9_di" bpmnElement="Flow_0j2x0o9">
+        <di:waypoint x="1873" y="1122" />
+        <di:waypoint x="1873" y="1301" />
+        <di:waypoint x="1973" y="1301" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0d6g24c" bpmnElement="Flow_B22">
+        <di:waypoint x="2009" y="1301" />
+        <di:waypoint x="2123" y="1301" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1b7rizo" bpmnElement="Flow_1o1pdc3">
+        <di:waypoint x="2263" y="1301" />
+        <di:waypoint x="3113" y="1301" />
+        <di:waypoint x="3113" y="1146" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1ij3fes" bpmnElement="Flow_B14">
+        <di:waypoint x="3038" y="1000" />
+        <di:waypoint x="3113" y="1000" />
+        <di:waypoint x="3113" y="1096" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0oynxg4" bpmnElement="Flow_1u437nb">
+        <di:waypoint x="2893" y="910" />
+        <di:waypoint x="3113" y="910" />
+        <di:waypoint x="3113" y="1096" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_17z8q62" bpmnElement="Flow_B24">
+        <di:waypoint x="3138" y="1121" />
+        <di:waypoint x="3188" y="1121" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1y304q6_di" bpmnElement="Flow_1y304q6">
+        <di:waypoint x="1873" y="1072" />
+        <di:waypoint x="1873" y="910" />
+        <di:waypoint x="2220" y="910" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1p2zzu7" bpmnElement="Flow_0eo2w5e">
+        <di:waypoint x="2256" y="910" />
+        <di:waypoint x="2508" y="910" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_040k6c5" bpmnElement="Flow_1x41gr1">
+        <di:waypoint x="2648" y="910" />
+        <di:waypoint x="2753" y="910" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s9qotw_di" bpmnElement="Flow_1s9qotw">
+        <di:waypoint x="1873" y="1072" />
+        <di:waypoint x="1873" y="1000" />
+        <di:waypoint x="2137" y="1000" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1bk776b_di" bpmnElement="Flow_1bk776b">
+        <di:waypoint x="1898" y="1097" />
+        <di:waypoint x="2068" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_168a5jo" bpmnElement="Flow_0voqfcg">
+        <di:waypoint x="2104" y="1097" />
+        <di:waypoint x="2198" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_03w66yx" bpmnElement="Flow_0elhn1g">
+        <di:waypoint x="2338" y="1097" />
+        <di:waypoint x="2373" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0kcugzu" bpmnElement="Flow_1xg03j6">
+        <di:waypoint x="2423" y="1097" />
+        <di:waypoint x="2488" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0tlrfk9" bpmnElement="Flow_0d2zdcu">
+        <di:waypoint x="2398" y="1122" />
+        <di:waypoint x="2398" y="1190" />
+        <di:waypoint x="2438" y="1190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1v712uo" bpmnElement="Flow_0j1ef3r">
+        <di:waypoint x="2173" y="1000" />
+        <di:waypoint x="2638" y="1000" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_02uqqiv" bpmnElement="Flow_B13">
+        <di:waypoint x="2778" y="1000" />
+        <di:waypoint x="2898" y="1000" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0prkg81" bpmnElement="Flow_0i2xm5g">
+        <di:waypoint x="2628" y="1097" />
+        <di:waypoint x="2753" y="1097" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_1miptyw" bpmnElement="Flow_1puett9">
+        <di:waypoint x="2803" y="1097" />
+        <di:waypoint x="2968" y="1097" />
+        <di:waypoint x="2968" y="1040" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1jkulis_di" bpmnElement="Flow_1jkulis">
+        <di:waypoint x="2578" y="1190" />
+        <di:waypoint x="2623" y="1190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0admej9" bpmnElement="Flow_0xj9ojo">
+        <di:waypoint x="2763" y="1190" />
+        <di:waypoint x="2778" y="1190" />
+        <di:waypoint x="2778" y="1122" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_0012778" bpmnElement="Flow_B25">
+        <di:waypoint x="3224" y="1121" />
+        <di:waypoint x="3300" y="1121" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_PathData_di" bpmnElement="MessageFlow_PathData">
+        <di:waypoint x="1030" y="510" />
+        <di:waypoint x="1030" y="600" />
+        <di:waypoint x="652" y="600" />
+        <di:waypoint x="652" y="1009" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_ValidationResult_di" bpmnElement="MessageFlow_ValidationResult">
+        <di:waypoint x="780" y="987" />
+        <di:waypoint x="780" y="690" />
+        <di:waypoint x="1170" y="690" />
+        <di:waypoint x="1170" y="488" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Confirmation_di" bpmnElement="MessageFlow_Confirmation">
+        <di:waypoint x="1757" y="1057" />
+        <di:waypoint x="1757" y="860" />
+        <di:waypoint x="1370" y="860" />
+        <di:waypoint x="1370" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uuphcr_di" bpmnElement="Flow_1uuphcr">
+        <di:waypoint x="1991" y="630" />
+        <di:waypoint x="1991" y="1283" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0r1xoez_di" bpmnElement="Flow_0r1xoez">
+        <di:waypoint x="2238" y="380" />
+        <di:waypoint x="2238" y="892" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0urhx8p_di" bpmnElement="Flow_0urhx8p">
+        <di:waypoint x="2086" y="563" />
+        <di:waypoint x="2086" y="1079" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12wajxd_di" bpmnElement="Flow_12wajxd">
+        <di:waypoint x="2155" y="472" />
+        <di:waypoint x="2155" y="982" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12cp517_di" bpmnElement="Flow_12cp517">
+        <di:waypoint x="3206" y="1103" />
+        <di:waypoint x="3206" y="830" />
+        <di:waypoint x="2751" y="830" />
+        <di:waypoint x="2751" y="478" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
