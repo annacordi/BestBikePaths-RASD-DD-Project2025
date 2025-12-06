@@ -51,19 +51,16 @@
     <sequenceFlow id="Flow_SaveOnly" name="Save as Trip only" sourceRef="Gateway_Decision" targetRef="Event_SendSaveRequest">
       <conditionExpression xsi:type="tFormalExpression">#{decision == 'saveOnly'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_WaitSave" sourceRef="Event_SendSaveRequest" targetRef="Event_ReceiveSuccess" />
+    <sequenceFlow id="Flow_WaitSave" sourceRef="Event_SendSaveRequest" targetRef="Gateway_0b106tb" />
     <sequenceFlow id="Flow_PublishOnly" name="Publish as BikePath only" sourceRef="Gateway_Decision" targetRef="Event_SendPublishRequest">
       <conditionExpression xsi:type="tFormalExpression">#{decision == 'publishOnly'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_WaitPublish" sourceRef="Event_SendPublishRequest" targetRef="Event_ReceiveSuccess" />
     <sequenceFlow id="Flow_SaveAndPublish" name="Save &#38; Publish" sourceRef="Gateway_Decision" targetRef="Event_SendSaveAndPublishRequest">
       <conditionExpression xsi:type="tFormalExpression">#{decision == 'saveAndPublish'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_WaitBoth" sourceRef="Event_SendSaveAndPublishRequest" targetRef="Event_ReceiveSuccess" />
     <sequenceFlow id="Flow_Discard" name="Discard" sourceRef="Gateway_Decision" targetRef="Event_SendDiscardRequest">
       <conditionExpression xsi:type="tFormalExpression">#{decision == 'discard'}</conditionExpression>
     </sequenceFlow>
-    <sequenceFlow id="Flow_ToDiscardEnd" sourceRef="Event_SendDiscardRequest" targetRef="EndEvent_Discarded" />
     <task id="Task_StopRecording" name="Stop trip recording">
       <incoming>Flow_03</incoming>
       <outgoing>Flow_04</outgoing>
@@ -75,12 +72,9 @@
     </intermediateCatchEvent>
     <intermediateThrowEvent id="Event_SendDiscardRequest" name="Send discard request">
       <incoming>Flow_Discard</incoming>
-      <outgoing>Flow_ToDiscardEnd</outgoing>
+      <outgoing>Flow_0jxixw3</outgoing>
       <messageEventDefinition />
     </intermediateThrowEvent>
-    <endEvent id="EndEvent_Discarded" name="Data discarded">
-      <incoming>Flow_ToDiscardEnd</incoming>
-    </endEvent>
     <intermediateThrowEvent id="Event_SendSaveRequest" name="Send save request">
       <incoming>Flow_SaveOnly</incoming>
       <outgoing>Flow_WaitSave</outgoing>
@@ -88,18 +82,16 @@
     </intermediateThrowEvent>
     <intermediateThrowEvent id="Event_SendPublishRequest" name="Send publish request">
       <incoming>Flow_PublishOnly</incoming>
-      <outgoing>Flow_WaitPublish</outgoing>
+      <outgoing>Flow_021kxce</outgoing>
       <messageEventDefinition />
     </intermediateThrowEvent>
     <intermediateThrowEvent id="Event_SendSaveAndPublishRequest" name="Send request">
       <incoming>Flow_SaveAndPublish</incoming>
-      <outgoing>Flow_WaitBoth</outgoing>
+      <outgoing>Flow_19fem37</outgoing>
       <messageEventDefinition />
     </intermediateThrowEvent>
     <intermediateCatchEvent id="Event_ReceiveSuccess" name="Receive success confirmation">
-      <incoming>Flow_WaitSave</incoming>
-      <incoming>Flow_WaitPublish</incoming>
-      <incoming>Flow_WaitBoth</incoming>
+      <incoming>Flow_1wu9qul</incoming>
       <outgoing>Flow_ToEnd</outgoing>
       <messageEventDefinition />
     </intermediateCatchEvent>
@@ -107,6 +99,17 @@
     <endEvent id="EndEvent_RU" name="End session">
       <incoming>Flow_ToEnd</incoming>
     </endEvent>
+    <exclusiveGateway id="Gateway_0b106tb" name="">
+      <incoming>Flow_WaitSave</incoming>
+      <incoming>Flow_021kxce</incoming>
+      <incoming>Flow_19fem37</incoming>
+      <incoming>Flow_0jxixw3</incoming>
+      <outgoing>Flow_1wu9qul</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1wu9qul" sourceRef="Gateway_0b106tb" targetRef="Event_ReceiveSuccess" />
+    <sequenceFlow id="Flow_021kxce" sourceRef="Event_SendPublishRequest" targetRef="Gateway_0b106tb" />
+    <sequenceFlow id="Flow_19fem37" sourceRef="Event_SendSaveAndPublishRequest" targetRef="Gateway_0b106tb" />
+    <sequenceFlow id="Flow_0jxixw3" sourceRef="Event_SendDiscardRequest" targetRef="Gateway_0b106tb" />
   </process>
   <process id="Process_BBPSystem" name="BBP System Process" isExecutable="false">
     <startEvent id="Event_ReceiveStartRequest" name="Receive start request">
@@ -131,7 +134,6 @@
     <sequenceFlow id="Flow_B13" sourceRef="Task_CalculateScore" targetRef="Task_PublishBikePath" />
     <sequenceFlow id="Flow_B14" sourceRef="Task_PublishBikePath" targetRef="Gateway_Merge" />
     <sequenceFlow id="Flow_B22" sourceRef="Event_ReceiveDiscardRequest" targetRef="Task_DeleteData" />
-    <sequenceFlow id="Flow_B23" sourceRef="Task_DeleteData" targetRef="EndEvent_Deleted" />
     <sequenceFlow id="Flow_B24" sourceRef="Gateway_Merge" targetRef="Event_SendSuccess" />
     <sequenceFlow id="Flow_B25" sourceRef="Event_SendSuccess" targetRef="EndEvent_BBP" />
     <intermediateCatchEvent id="Event_ReceiveDiscardRequest" name="Receive discard request">
@@ -168,15 +170,13 @@
     <sequenceFlow id="Flow_0gsozjd" sourceRef="Event_SendReviewData" targetRef="Event_ReceiveConfirmation" />
     <task id="Task_DeleteData" name="Delete collected data">
       <incoming>Flow_B22</incoming>
-      <outgoing>Flow_B23</outgoing>
+      <outgoing>Flow_1kveiy8</outgoing>
     </task>
-    <endEvent id="EndEvent_Deleted" name="Data deleted">
-      <incoming>Flow_B23</incoming>
-    </endEvent>
     <sequenceFlow id="Flow_1q4srwm" sourceRef="Gateway_RequestType" targetRef="Event_ReceiveSaveRequest" />
     <exclusiveGateway id="Gateway_Merge" name="">
       <incoming>Flow_B14</incoming>
       <incoming>Flow_1u437nb</incoming>
+      <incoming>Flow_1kveiy8</incoming>
       <outgoing>Flow_B24</outgoing>
     </exclusiveGateway>
     <intermediateCatchEvent id="Event_ReceiveSaveRequest" name="Receive save request">
@@ -264,6 +264,7 @@
     <endEvent id="EndEvent_BBP" name="End session">
       <incoming>Flow_B25</incoming>
     </endEvent>
+    <sequenceFlow id="Flow_1kveiy8" sourceRef="Task_DeleteData" targetRef="Gateway_Merge" />
   </process>
   <message id="Message_Start" name="StartRequest" />
   <message id="Message_Stop" name="StopRequest" />
@@ -277,7 +278,7 @@
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_TripRecording_V2">
       <bpmndi:BPMNShape id="Participant_RegisteredUser_di" bpmnElement="Participant_RegisteredUser" isHorizontal="true">
-        <dc:Bounds x="160" y="80" width="2950" height="350" />
+        <dc:Bounds x="160" y="80" width="2730" height="350" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_RU_di" bpmnElement="StartEvent_RU">
         <dc:Bounds x="230" y="220" width="36" height="36" />
@@ -322,12 +323,6 @@
           <dc:Bounds x="1257" y="334.5" width="65" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_Discarded_di" bpmnElement="EndEvent_Discarded">
-        <dc:Bounds x="1372" y="372" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1353" y="415" width="74" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_SendSaveRequest_di" bpmnElement="Event_SendSaveRequest">
         <dc:Bounds x="1611" y="122" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -357,6 +352,9 @@
         <bpmndi:BPMNLabel>
           <dc:Bounds x="2451" y="263" width="60" height="14" />
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_040y4k8" bpmnElement="Gateway_0b106tb" isMarkerVisible="true">
+        <dc:Bounds x="1985" y="213" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_01_di" bpmnElement="Flow_01">
         <di:waypoint x="266" y="238" />
@@ -396,8 +394,9 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_WaitSave_di" bpmnElement="Flow_WaitSave">
         <di:waypoint x="1647" y="140" />
-        <di:waypoint x="2140" y="140" />
-        <di:waypoint x="2140" y="220" />
+        <di:waypoint x="1950" y="140" />
+        <di:waypoint x="1950" y="220" />
+        <di:waypoint x="2003" y="220" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_PublishOnly_di" bpmnElement="Flow_PublishOnly">
         <di:waypoint x="1195" y="238" />
@@ -406,23 +405,13 @@
           <dc:Bounds x="1244" y="206" width="68" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_WaitPublish_di" bpmnElement="Flow_WaitPublish">
-        <di:waypoint x="1575" y="238" />
-        <di:waypoint x="2122" y="238" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_SaveAndPublish_di" bpmnElement="Flow_SaveAndPublish">
         <di:waypoint x="1170" y="263" />
         <di:waypoint x="1170" y="329" />
         <di:waypoint x="1470" y="329" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1380" y="314" width="75" height="14" />
+          <dc:Bounds x="1362" y="314" width="75" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_WaitBoth_di" bpmnElement="Flow_WaitBoth">
-        <di:waypoint x="1506" y="329" />
-        <di:waypoint x="2070" y="329" />
-        <di:waypoint x="2070" y="238" />
-        <di:waypoint x="2122" y="238" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_Discard_di" bpmnElement="Flow_Discard">
         <di:waypoint x="1170" y="263" />
@@ -432,16 +421,30 @@
           <dc:Bounds x="1191" y="373" width="38" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_ToDiscardEnd_di" bpmnElement="Flow_ToDiscardEnd">
-        <di:waypoint x="1308" y="390" />
-        <di:waypoint x="1372" y="390" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_ToEnd_di" bpmnElement="Flow_ToEnd">
         <di:waypoint x="2158" y="238" />
         <di:waypoint x="2462" y="238" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1wu9qul_di" bpmnElement="Flow_1wu9qul">
+        <di:waypoint x="2035" y="238" />
+        <di:waypoint x="2122" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_021kxce_di" bpmnElement="Flow_021kxce">
+        <di:waypoint x="1575" y="238" />
+        <di:waypoint x="1985" y="238" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19fem37_di" bpmnElement="Flow_19fem37">
+        <di:waypoint x="1506" y="329" />
+        <di:waypoint x="2010" y="329" />
+        <di:waypoint x="2010" y="263" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0jxixw3_di" bpmnElement="Flow_0jxixw3">
+        <di:waypoint x="1308" y="390" />
+        <di:waypoint x="2010" y="390" />
+        <di:waypoint x="2010" y="263" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Participant_BBPSystem_di" bpmnElement="Participant_BBPSystem" isHorizontal="true">
-        <dc:Bounds x="160" y="480" width="2958" height="600" />
+        <dc:Bounds x="160" y="480" width="2730" height="600" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_ReceiveStartRequest_di" bpmnElement="Event_ReceiveStartRequest">
         <dc:Bounds x="352" y="610" width="36" height="36" />
@@ -487,12 +490,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Task_DeleteData_di" bpmnElement="Task_DeleteData">
         <dc:Bounds x="1470" y="930" width="140" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_Deleted_di" bpmnElement="EndEvent_Deleted">
-        <dc:Bounds x="1682" y="952" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="1669" y="995" width="63" height="14" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_Merge_di" bpmnElement="Gateway_Merge" isMarkerVisible="true">
         <dc:Bounds x="2585" y="745" width="50" height="50" />
@@ -552,15 +549,15 @@
         <dc:Bounds x="2255" y="775" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_SendSuccess_di" bpmnElement="Event_SendSuccess">
-        <dc:Bounds x="2822" y="752" width="36" height="36" />
+        <dc:Bounds x="2685" y="752" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2806" y="795" width="69" height="27" />
+          <dc:Bounds x="2669" y="795" width="69" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_BBP_di" bpmnElement="EndEvent_BBP">
-        <dc:Bounds x="2912" y="752" width="36" height="36" />
+        <dc:Bounds x="2797" y="752" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="2900" y="795" width="60" height="14" />
+          <dc:Bounds x="2785" y="795" width="60" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_B01_di" bpmnElement="Flow_B01">
@@ -610,17 +607,13 @@
         <di:waypoint x="1378" y="970" />
         <di:waypoint x="1470" y="970" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_B23_di" bpmnElement="Flow_B23">
-        <di:waypoint x="1610" y="970" />
-        <di:waypoint x="1682" y="970" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_B24_di" bpmnElement="Flow_B24">
         <di:waypoint x="2635" y="770" />
-        <di:waypoint x="2822" y="770" />
+        <di:waypoint x="2685" y="770" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_B25_di" bpmnElement="Flow_B25">
-        <di:waypoint x="2858" y="770" />
-        <di:waypoint x="2912" y="770" />
+        <di:waypoint x="2721" y="770" />
+        <di:waypoint x="2797" y="770" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_B04_di" bpmnElement="Flow_B04">
         <di:waypoint x="710" y="756" />
@@ -697,6 +690,11 @@
         <di:waypoint x="2470" y="800" />
         <di:waypoint x="2470" y="707" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1kveiy8_di" bpmnElement="Flow_1kveiy8">
+        <di:waypoint x="1610" y="970" />
+        <di:waypoint x="2610" y="970" />
+        <di:waypoint x="2610" y="795" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_StartRecording_di" bpmnElement="Flow_StartRecording">
         <di:waypoint x="370" y="278" />
         <di:waypoint x="370" y="610" />
@@ -730,8 +728,8 @@
         <di:waypoint x="1360" y="952" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_SuccessConfirmation_di" bpmnElement="Flow_SuccessConfirmation">
-        <di:waypoint x="2840" y="752" />
-        <di:waypoint x="2840" y="370" />
+        <di:waypoint x="2703" y="752" />
+        <di:waypoint x="2703" y="370" />
         <di:waypoint x="2140" y="370" />
         <di:waypoint x="2140" y="256" />
       </bpmndi:BPMNEdge>
