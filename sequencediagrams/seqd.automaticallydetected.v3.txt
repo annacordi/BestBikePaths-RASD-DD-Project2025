@@ -1,0 +1,109 @@
+@startuml
+title Automated Path Detection - Sequence Diagram
+
+actor "RU" as RU
+participant "BBP" as BBP
+participant "Motion Detection\nService" as MDS
+participant "GPS\nService" as GPS
+participant "Obstacle Detection\nService" as ODS
+participant "Database" as DB
+
+== Background Monitoring Phase ==
+
+activate BBP
+BBP -> MDS: activateMotionDetection
+activate MDS
+
+note over MDS: Continuously monitors\nuser movement in background
+
+MDS -> GPS: requestSpeedData
+activate GPS
+GPS -> MDS: returnCurrentSpeed
+deactivate GPS
+
+alt Speed indicates biking activity
+    MDS -> BBP: bikingActivityDetected
+    
+    BBP -> GPS: startGPSTracking
+    activate GPS
+    note over GPS: GPS is MANDATORY\nfor automated detection
+    
+    BBP -> BBP: checkSensorConfiguration\n(set during registration)
+    
+    opt Sensors Enabled
+        BBP -> ODS: startObstacleDetection
+        activate ODS
+   
+    end
+    
+    == Data Collection Phase ==
+    
+    loop While user is biking
+        GPS -> GPS: collectGPSCoordinates
+        
+        opt If Sensors Enabled
+            ODS -> ODS: readAccelerometerData
+            ODS -> ODS: readGyroscopeData
+            
+            alt Significant movements detected
+                ODS -> ODS: recordObstacle\n(location, type, confidence)
+                note right of ODS: Potential pothole\nor obstacle detected
+            end
+        end
+        
+        BBP -> BBP: storeTripDataTemporarily
+    end
+    
+    == Trip End Detection ==
+    
+    alt Speed decreases below threshold for period
+        MDS -> BBP: bikingActivityStopped
+        
+        BBP -> GPS: stopGPSTracking
+        deactivate GPS
+        
+        opt If Sensors Were Active
+            BBP -> ODS: stopObstacleDetection
+            deactivate ODS
+        end
+        
+        BBP -> BBP: processCollectedData
+        BBP -> BBP: calculateTripStatistics\n(distance, speed, duration)
+        
+        
+        
+        BBP -> RU: sendNotification
+        
+        deactivate MDS
+        
+        == User Review Decision ==
+        
+        RU -> BBP: tapNotificationToReview
+        
+        BBP -> RU: displayTripSummary\n()
+        
+        BBP -> RU: displayInitialOptions\n(reviewAndEdit, discard)
+        
+        alt User Chooses to Discard
+            RU -> BBP: selectDiscard
+            BBP -> BBP: deleteTempData
+            BBP -> RU: confirmDiscarded
+            note over RU, BBP: Process ends here
+        end
+        
+        alt User Chooses to Review and Edit
+            RU -> BBP: selectReviewAndEdit
+            
+            note over RU, DB
+            Review and Save/Publish Options flow
+            See separate diagram: "Review and Save/Publish Options"
+            end note
+        end
+    end
+    
+else Speed too low (not biking)
+    note over MDS: Speed below threshold\nNo recording triggered
+end
+
+deactivate BBP
+@enduml
