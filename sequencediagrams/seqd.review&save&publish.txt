@@ -1,0 +1,101 @@
+@startuml
+title Review and Save/Publish Options - Sequence Diagram
+
+actor "RU" as RU
+participant "BBP" as BBP
+participant "Score\nCalculator" as Score
+participant "Weather\nService" as Weather
+participant "Database" as DB
+
+== Review Phase ==
+
+BBP -> RU: displayReviewScreen\n(origin, destination, streets, obstacles, pathStatus)
+
+RU -> RU: reviewInformation
+
+opt User modifies information
+    RU -> BBP: modifyData\n(origin, destination, streets, obstacles, pathStatus)
+end
+
+RU -> BBP: confirmInformation
+
+BBP -> BBP: updatePathInfo(userModifications)
+
+== Save/Publish Decision ==
+
+BBP -> RU: displaySavePublishOptions\n(Save as Trip | Publish as BikePath | Save&Publish)
+
+RU -> BBP: selectOption(choice)
+
+alt Save as Trip Only
+    
+    note over BBP, Weather: Weather enrichment occurs here\n(shown in separate diagram)
+    
+    BBP -> DB: storeTripData(tripData)
+    activate DB
+    DB -> BBP: tripSaved
+    deactivate DB
+    
+    BBP -> RU: confirmTripSaved\n("Trip saved in My Trips")
+    
+    note over RU, BBP: User can publish this trip\nlater from "My Trips"
+    
+else Publish as BikePath Only
+    
+    BBP -> Score: calculatePathScore(obstacles, pathStatus)
+    activate Score
+    Score -> BBP: returnScore
+    deactivate Score
+    
+    BBP -> DB: publishPathData(pathData, score)
+    activate DB
+    
+    alt Network available
+        DB -> BBP: pathPublished
+        deactivate DB
+        BBP -> RU: confirmPathPublished\n("Path published to community")
+        
+    else Network unavailable
+        DB -> BBP: networkError
+        deactivate DB
+        BBP -> DB: saveLocallyForLaterSync(pathData)
+        activate DB
+        DB -> BBP: savedLocally
+        deactivate DB
+        BBP -> RU: notifyDelayedPublication\n("Saved locally. Will publish when online")
+    end
+    
+else Save & Publish Simultaneously
+    
+    note over BBP, Weather: Weather enrichment occurs here\n(shown in separate diagram)
+    
+    BBP -> DB: storeTripData(tripData)
+    activate DB
+    DB -> BBP: tripSaved
+    deactivate DB
+    
+    BBP -> Score: calculatePathScore(obstacles, pathStatus)
+    activate Score
+    Score -> BBP: returnScore
+    deactivate Score
+    
+    BBP -> DB: publishPathData(pathData, score)
+    activate DB
+    
+    alt Network available
+        DB -> BBP: pathPublished
+        deactivate DB
+        BBP -> RU: confirmBothActionsCompleted\n("Trip saved & Path published")
+        
+    else Network unavailable
+        DB -> BBP: networkError
+        deactivate DB
+        BBP -> DB: saveLocallyForLaterSync(pathData)
+        activate DB
+        DB -> BBP: savedLocally
+        deactivate DB
+        BBP -> RU: confirmPartialSuccess\n("Trip saved. Path will publish when online")
+    end
+    
+end
+@enduml
