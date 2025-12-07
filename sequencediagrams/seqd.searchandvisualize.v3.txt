@@ -26,7 +26,7 @@ alt Multiple paths found
     MapService --> BBP: Map with paths highlighted
     deactivate MapService
     
-    BBP --> User: Display interactive map\nwith all paths
+    BBP --> User: Display a map with all paths
     
     opt User selects path
         User -> BBP: Select path for details
