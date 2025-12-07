@@ -1,0 +1,85 @@
+@startuml
+title Manual Path Insertion - Sequence Diagram
+
+actor "RU" as RU
+participant "BBP" as BBP
+participant "Map Service" as MapService
+participant "Validation\nService" as ValidationService
+participant "Database" as DB
+
+RU -> BBP: accessManualPathInsertion
+
+BBP -> RU: displayManualInsertionForm
+
+== Street Entry ==
+
+loop For each street in sequence
+    RU -> BBP: enterStreetName(street)
+    
+    BBP -> MapService: verifyStreet(streetName)
+    activate MapService
+    
+    alt Street exists
+        MapService -> BBP: streetValid(streetDetails)
+        deactivate MapService
+        BBP -> BBP: addStreetToSequence(validStreet)
+        note right of BBP: Street verified and added to path
+        
+    else Street not found
+        MapService -> BBP: streetNotFound
+        deactivate MapService
+        BBP -> RU: displayError("Street not found")
+        note over RU, BBP: User must enter valid street to proceed
+    end
+end
+
+== Path Details Entry ==
+
+RU -> BBP: setPathStatus(optimal/medium/sufficient/requiresMaintenance)
+
+opt User wants to report obstacles
+    RU -> BBP: addObstacle(type, location)
+    note right of BBP: User can add multiple obstacles
+end
+
+RU -> BBP: submitPathInformation
+
+== Validation Phase ==
+
+BBP -> ValidationService: validatePathData(requiredFields, dataFormat)
+activate ValidationService
+
+ValidationService -> ValidationService: checkRequiredFields()
+ValidationService -> ValidationService: validateDataFormat()
+
+alt Validation Failed
+    ValidationService -> BBP: validationError(missingFields)
+    deactivate ValidationService
+    BBP -> RU: displayValidationErrors(errorDetails)
+    note over RU, BBP: User must correct errors and resubmit
+    
+else Validation Successful
+    ValidationService -> BBP: validationSuccess
+    deactivate ValidationService
+    
+ 
+        == Confirmation Phase ==
+        
+        BBP -> BBP: prepareSummary(streets, status, obstacles)
+        
+        BBP -> RU: displayPathSummary(streetSequence, pathStatus, obstacleList)
+
+        
+        RU -> BBP: reviewAndConfirm
+        
+        alt User Confirms
+            BBP -> BBP: createPathInfoFromManualEntry
+            
+            note over RU, DB
+            Save/Publish Options flow
+            See separate diagram: "Review and Save/Publish Options"
+            end note
+        end
+ 
+end
+@enduml
