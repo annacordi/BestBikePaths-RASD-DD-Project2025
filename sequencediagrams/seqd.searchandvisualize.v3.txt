@@ -1,0 +1,53 @@
+@startuml
+title Search and Visualize Bike Path on Map
+
+actor User
+participant "BBP System" as BBP
+participant "Database" as DB
+participant "Map Service" as MapService
+
+User -> BBP: Enter origin and destination
+activate BBP
+
+BBP -> DB: queryBikePaths(origin, destination)
+activate DB
+DB --> BBP: List<BikePath>
+deactivate DB
+
+alt Multiple paths found
+    BBP -> BBP: rankPathsByScore()
+    BBP --> User: Display ranked list\n(with scores)
+    
+    User -> BBP: Request "View on Map"
+    
+    BBP -> MapService: requestPathVisualization(paths)
+    activate MapService
+    MapService -> MapService: Overlay paths on map
+    MapService --> BBP: Map with paths highlighted
+    deactivate MapService
+    
+    BBP --> User: Display interactive map\nwith all paths
+    
+    opt User selects path
+        User -> BBP: Select path for details
+        BBP --> User: Display path details\n(status, obstacles, score)
+    end
+    
+else Single path found
+    BBP --> User: Display path information\nwith score
+    
+    User -> BBP: Request "View on Map"
+    
+    BBP -> MapService: requestPathVisualization(singlePath)
+    activate MapService
+    MapService --> BBP: Map with path highlighted
+    deactivate MapService
+    
+    BBP --> User: Display map with path
+    
+else No paths found
+    BBP --> User: "No paths available\nfor this route"
+end
+
+deactivate BBP
+@enduml
