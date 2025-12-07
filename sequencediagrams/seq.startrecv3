@@ -1,0 +1,95 @@
+@startuml
+title Start/Stop Trip Recording - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Permission\nManager" as PM
+participant "GPS\nService" as GPS
+participant "Sensor\nService" as Sensor
+participant "Database" as DB
+
+RU -> BBP: tapStartRecordingButton
+
+BBP -> PM: checkGPSPermission
+PM -> BBP: returnGPSPermissionStatus
+
+alt GPS Permission Not Granted
+    BBP -> PM: requestGPSPermission(mandatory)
+    PM -> RU: displayGPSPermissionRequest\n(Required for recording)
+    
+    alt User Grants GPS Permission
+        RU -> PM: grantGPSPermission
+        PM -> BBP: gpsPermissionGranted
+    else User Denies GPS Permission
+        RU -> PM: denyGPSPermission
+        PM -> BBP: gpsPermissionDenied
+        BBP -> RU: displayError (GPS mandatory, cannot record)
+        note over RU, BBP: Recording cannot proceed. Process ends here
+    end
+end
+
+BBP -> BBP: checkSensorConfiguration
+
+alt Sensors Enabled
+    BBP -> Sensor: initializeSensorCollection
+    Sensor -> BBP: sensorsInitialized
+    note over BBP, Sensor: Obstacle detection enabled
+else Sensors Disabled
+    note over BBP: Proceed without obstacle detection
+end
+
+BBP -> GPS: initializeGPSTracking
+GPS -> BBP: gpsInitialized
+
+BBP -> BBP: startBackgroundRecording
+
+BBP -> RU: displayStopRecordingButton
+
+note over RU: RU starts cycling
+
+loop During Trip
+    GPS -> BBP: sendGPSCoordinates(latitude, longitude)
+    
+    opt If Sensors Enabled
+        Sensor -> BBP: sendSensorData(accelerometer, gyroscope)
+        BBP -> BBP: detectObstaclesAutomatically
+    end
+    
+    BBP -> BBP: storeTripDataTemporarily
+end
+
+note over RU: RU finishes cycling
+
+RU -> BBP: tapStopRecordingButton
+
+BBP -> GPS: stopGPSTracking
+GPS -> BBP: trackingStopped
+
+opt If Sensors Were Active
+    BBP -> Sensor: stopSensorCollection
+    Sensor -> BBP: collectionStopped
+end
+
+BBP -> BBP: processCollectedData
+BBP -> BBP: calculateTripStatistics
+
+BBP -> RU: displayTripSummary\n(distance, speed, duration, obstacles if available)
+
+BBP -> RU: displayInitialOptions(reviewAndEdit, discard)
+
+alt User Chooses to Discard
+    RU -> BBP: selectDiscard
+    BBP -> BBP: deleteTempData
+    BBP -> RU: confirmDiscarded
+    note over RU, BBP: Process ends here
+end
+
+alt User Chooses to Review and Edit
+    RU -> BBP: selectReviewAndEdit
+    
+    note over RU, DB
+    Review and Save/Publish Options flow
+    See separate diagram: "Review and Save/Publish Options"
+    end note
+end
+@enduml
