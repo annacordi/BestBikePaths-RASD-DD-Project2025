@@ -1,0 +1,127 @@
+@startuml
+title Review and Save/Publish Options - Sequence Diagram
+
+actor "RU" as RU
+participant "Trip Recording\nManager" as TRM
+participant "Path Information\nManager" as PIM
+participant "Weather Integration\nManager" as WIM
+participant "Database Query\nManager" as DQM
+
+== Review Phase ==
+
+TRM -> RU: displayReviewScreen\n(origin, destination, streets, obstacles, pathStatus)
+
+RU -> RU: reviewInformation
+
+opt User modifies information
+    RU -> TRM: modifyData\n(origin, destination, streets, obstacles, pathStatus)
+end
+
+RU -> TRM: confirmInformation
+
+TRM -> PIM: updatePathInfo(userModifications)
+activate PIM
+PIM --> TRM: updatedPathData
+deactivate PIM
+
+== Save/Publish Decision ==
+
+TRM -> RU: displaySavePublishOptions\n(Save as Trip | Publish as BikePath | Save&Publish)
+
+RU -> TRM: selectOption(choice)
+
+alt Save as Trip Only
+    
+    note over TRM, WIM: Weather enrichment occurs here\n(shown in separate diagram)
+    
+    TRM -> WIM: enrichTripWithWeather(tripData)
+    activate WIM
+    WIM --> TRM: enrichedTripData
+    deactivate WIM
+    
+    TRM -> DQM: storeTripData(enrichedTripData)
+    activate DQM
+    DQM -> DQM: executeSaveQuery()
+    DQM --> TRM: tripSaved
+    deactivate DQM
+    
+    TRM -> RU: confirmTripSaved\n("Trip saved in My Trips")
+    
+    note over RU, TRM: User can publish this trip\nlater from "My Trips"
+    
+else Publish as BikePath Only
+    
+    TRM -> PIM: calculatePathScore(obstacles, pathStatus)
+    activate PIM
+    PIM -> PIM: analyzeObstacles()
+    PIM -> PIM: evaluatePathStatus()
+    PIM -> PIM: computeFinalScore()
+    PIM --> TRM: pathScore
+    deactivate PIM
+    
+    TRM -> DQM: publishPathData(pathData, score)
+    activate DQM
+    
+    alt Network available
+        DQM -> DQM: executePublishQuery()
+        DQM --> TRM: pathPublished
+        deactivate DQM
+        TRM -> RU: confirmPathPublished\n("Path published to community")
+        
+    else Network unavailable
+        DQM --> TRM: networkError
+        deactivate DQM
+        TRM -> DQM: saveLocallyForLaterSync(pathData)
+        activate DQM
+        DQM -> DQM: storeInLocalQueue()
+        DQM --> TRM: savedLocally
+        deactivate DQM
+        TRM -> RU: notifyDelayedPublication\n("Saved locally. Will publish when online")
+    end
+    
+else Save & Publish Simultaneously
+    
+    note over TRM, WIM: Weather enrichment occurs here\n(shown in separate diagram)
+    
+    TRM -> WIM: enrichTripWithWeather(tripData)
+    activate WIM
+    WIM --> TRM: enrichedTripData
+    deactivate WIM
+    
+    TRM -> DQM: storeTripData(enrichedTripData)
+    activate DQM
+    DQM -> DQM: executeSaveQuery()
+    DQM --> TRM: tripSaved
+    deactivate DQM
+    
+    TRM -> PIM: calculatePathScore(obstacles, pathStatus)
+    activate PIM
+    PIM -> PIM: analyzeObstacles()
+    PIM -> PIM: evaluatePathStatus()
+    PIM -> PIM: computeFinalScore()
+    PIM --> TRM: pathScore
+    deactivate PIM
+    
+    TRM -> DQM: publishPathData(pathData, score)
+    activate DQM
+    
+    alt Network available
+        DQM -> DQM: executePublishQuery()
+        DQM --> TRM: pathPublished
+        deactivate DQM
+        TRM -> RU: confirmBothActionsCompleted\n("Trip saved & Path published")
+        
+    else Network unavailable
+        DQM --> TRM: networkError
+        deactivate DQM
+        TRM -> DQM: saveLocallyForLaterSync(pathData)
+        activate DQM
+        DQM -> DQM: storeInLocalQueue()
+        DQM --> TRM: savedLocally
+        deactivate DQM
+        TRM -> RU: confirmPartialSuccess\n("Trip saved. Path will publish when online")
+    end
+    
+end
+
+@enduml

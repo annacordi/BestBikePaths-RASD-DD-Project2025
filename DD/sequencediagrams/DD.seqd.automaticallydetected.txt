@@ -1,0 +1,111 @@
+@startuml
+title Automated Path Detection - Sequence Diagram
+
+actor "RU" as RU
+participant "Trip Recording\nManager" as TRM
+participant "Sensor Data\nProcessor" as SDP
+participant "Path Information\nManager" as PIM
+participant "Database Query\nManager" as DQM
+participant "Notification\nManager" as NM
+
+== Background Monitoring Phase ==
+
+activate TRM
+TRM -> SDP: activateMotionDetection()
+activate SDP
+note over SDP: Continuously monitors\nuser movement in background
+
+SDP -> SDP: requestSpeedData()
+SDP -> SDP: analyzeCurrentSpeed()
+
+alt Speed indicates biking activity
+    SDP -> TRM: bikingActivityDetected()
+    
+    TRM -> SDP: startGPSTracking()
+    note over SDP: GPS is MANDATORY\nfor automated detection
+    
+    TRM -> TRM: checkSensorConfiguration()\n(set during registration)
+    
+    opt Sensors Enabled
+        TRM -> SDP: startObstacleDetection()
+    end
+    
+    == Data Collection Phase ==
+    
+    loop While user is biking
+        SDP -> SDP: collectGPSCoordinates()
+        
+        opt If Sensors Enabled
+            SDP -> SDP: readAccelerometerData()
+            SDP -> SDP: readGyroscopeData()
+            
+            alt Significant movements detected
+                SDP -> SDP: detectAndClassifyObstacle()
+                SDP -> SDP: recordObstacle\n(location, type, confidence)
+                note right of SDP: Potential pothole\nor obstacle detected
+            end
+        end
+        
+        TRM -> TRM: storeTripDataTemporarily()
+    end
+    
+    == Trip End Detection ==
+    
+    alt Speed decreases below threshold for period
+        SDP -> TRM: bikingActivityStopped()
+        
+        TRM -> SDP: stopGPSTracking()
+        
+        opt If Sensors Were Active
+            TRM -> SDP: stopObstacleDetection()
+        end
+        
+        deactivate SDP
+        
+        TRM -> PIM: processCollectedData(tripData)
+        activate PIM
+        PIM -> PIM: calculateTripStatistics\n(distance, speed, duration)
+        PIM --> TRM: processedTripData
+        deactivate PIM
+        
+        TRM -> NM: sendTripCompletedNotification(tripSummary)
+        activate NM
+        NM -> RU: sendNotification()
+        deactivate NM
+        
+        == User Review Decision ==
+        
+        RU -> TRM: tapNotificationToReview()
+        
+        TRM -> PIM: getTripSummary(tripId)
+        activate PIM
+        PIM --> TRM: tripSummary
+        deactivate PIM
+        
+        TRM -> RU: displayTripSummary()
+        
+        TRM -> RU: displayInitialOptions\n(reviewAndEdit, discard)
+        
+        alt User Chooses to Discard
+            RU -> TRM: selectDiscard()
+            TRM -> TRM: deleteTempData()
+            TRM -> RU: confirmDiscarded()
+            note over RU, TRM: Process ends here
+        end
+        
+        alt User Chooses to Review and Edit
+            RU -> TRM: selectReviewAndEdit()
+            
+            note over RU, DQM
+            Review and Save/Publish Options flow
+            See separate diagram: "Review and Save/Publish Options"
+            end note
+        end
+    end
+    
+else Speed too low (not biking)
+    note over SDP: Speed below threshold\nNo recording triggered
+end
+
+deactivate TRM
+@enduml

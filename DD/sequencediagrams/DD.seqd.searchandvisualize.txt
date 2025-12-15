@@ -1,0 +1,82 @@
+@startuml
+title Search and Visualize Bike Path on Map
+
+actor User
+participant "Search & Browse\nManager" as SBM
+participant "Database Query\nManager" as DQM
+participant "Path Information\nManager" as PIM
+participant "Map Service" as MapService
+
+User -> SBM: Enter origin and destination
+activate SBM
+
+SBM -> DQM: queryBikePaths(origin, destination)
+activate DQM
+DQM -> DQM: Execute query on database
+DQM --> SBM: List<BikePath>
+deactivate DQM
+
+alt Multiple paths found
+    SBM -> PIM: rankPathsByScore(paths)
+    activate PIM
+    PIM --> SBM: Ranked List<BikePath>
+    deactivate PIM
+    
+    SBM --> User: Display ranked list\n(with scores)
+    
+    User -> SBM: Request "View on Map"
+    
+    SBM -> PIM: preparePathsForVisualization(paths)
+    activate PIM
+    PIM --> SBM: Formatted path data
+    deactivate PIM
+    
+    SBM -> MapService: requestPathVisualization(pathsData)
+    activate MapService
+    MapService -> MapService: Overlay paths on map
+    MapService --> SBM: Map with paths highlighted
+    deactivate MapService
+    
+    SBM --> User: Display a map with all paths
+    
+    opt User selects path
+        User -> SBM: Select path for details
+        SBM -> PIM: getPathDetails(pathId)
+        activate PIM
+        PIM -> DQM: queryPathDetails(pathId)
+        activate DQM
+        DQM --> PIM: Path details
+        deactivate DQM
+        PIM --> SBM: Formatted path details
+        deactivate PIM
+        SBM --> User: Display path details\n(status, obstacles, score)
+    end
+    
+else Single path found
+    SBM -> PIM: getPathWithScore(path)
+    activate PIM
+    PIM --> SBM: Path information with score
+    deactivate PIM
+    
+    SBM --> User: Display path information\nwith score
+    
+    User -> SBM: Request "View on Map"
+    
+    SBM -> PIM: preparePathForVisualization(path)
+    activate PIM
+    PIM --> SBM: Formatted path data
+    deactivate PIM
+    
+    SBM -> MapService: requestPathVisualization(pathData)
+    activate MapService
+    MapService --> SBM: Map with path highlighted
+    deactivate MapService
+    
+    SBM --> User: Display map with path
+    
+else No paths found
+    SBM --> User: "No paths available\nfor this route"
+end
+
+deactivate SBM
+@enduml
