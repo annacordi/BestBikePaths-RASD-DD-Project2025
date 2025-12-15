@@ -1,0 +1,75 @@
+@startuml Registration Sequence Diagram with Low Level Components
+actor User
+participant "Registration\nPage" as RegPage
+participant "Authentication\nManager" as AuthMgr
+participant "Sensor Data\nProcessor" as SensorProc
+participant "Database Query\nManager" as DBQuery
+participant "Notification\nManager" as NotifMgr
+
+User -> RegPage: Enter registration data
+activate RegPage
+
+RegPage -> AuthMgr: Validate input data
+activate AuthMgr
+
+alt Invalid data
+    AuthMgr --> RegPage: Return validation errors
+    RegPage --> User: Show error messages
+else Valid data
+    AuthMgr --> RegPage: Data valid
+    
+    AuthMgr -> DBQuery: Check if email exists
+    activate DBQuery
+    
+    alt Email already exists
+        DBQuery --> AuthMgr: Email found
+        deactivate DBQuery
+        AuthMgr --> RegPage: Email already registered
+        deactivate AuthMgr
+        RegPage --> User: Show error message
+    else Email not exists
+        DBQuery --> AuthMgr: Email available
+        
+        AuthMgr -> DBQuery: Save user credentials
+        DBQuery --> AuthMgr: User saved
+        deactivate DBQuery
+        
+        AuthMgr --> RegPage: User created successfully
+        deactivate AuthMgr
+        
+        RegPage --> User: Show permissions\nconfiguration screen
+        
+        User -> RegPage: Select permission preferences\n(GPS, Auto-detection, Sensors)
+        
+        RegPage -> SensorProc: Configure sensor permissions
+        activate SensorProc
+        
+        SensorProc -> DBQuery: Save permission preferences
+        activate DBQuery
+        
+        alt Permission update fails
+            DBQuery --> SensorProc: Update failed
+            deactivate DBQuery
+            SensorProc --> RegPage: Permission update error
+            deactivate SensorProc
+            RegPage --> User: Show warning\n(Can configure later)
+        else Permission update succeeds
+            DBQuery --> SensorProc: Permissions saved
+            deactivate DBQuery
+            SensorProc --> RegPage: Permissions updated
+            deactivate SensorProc
+        end
+        
+        RegPage -> NotifMgr: Request verification email
+        activate NotifMgr
+        
+        NotifMgr -> NotifMgr: Send verification email
+        NotifMgr --> RegPage: Email sent
+        deactivate NotifMgr
+        
+        RegPage --> User: Show success message\n(Check email)
+        deactivate RegPage
+    end
+end
+
+@enduml
