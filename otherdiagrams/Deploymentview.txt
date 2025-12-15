@@ -1,0 +1,68 @@
+@startuml BBP_Deployment
+left to right direction
+
+' Mobile Device
+node "Mobile Device" <<device>> {
+    component "BBP Mobile App" <<application>> as MobApp
+    component "Maps" <<service>> as MapService
+    component "Weather API" <<service>> as MobWeather
+    component "Edge Firewall" <<security>> as MobFirewall
+}
+
+' Backend Deployment
+package "BBP Backend Deployment Perimeter" {
+  
+  ' Cluster Node 1
+  node "Cluster Node 1" <<server>> as S1{
+    node "Ubuntu 24 LTS" <<operating system>> as OS1 {
+      node "Docker Container" <<execution environment>> as Docker1 {
+        database "Load Balancer\nNGINX" <<load balancer>> as LB
+      }
+    }
+  }
+  
+  ' Cluster Node 2
+  node "Cluster Node 2" <<server>> as S2{
+    node "Ubuntu 24 LTS" <<operating system>> as OS2 {
+      node "Docker Container" <<execution environment>> as Docker2 {
+        component "BBP Application Server\nNode.js/Python" <<application server>> as AppServer
+      }
+    }
+  }
+  
+  ' Cluster Node 4
+  node "Cluster Node 4" <<server>> as S4 {
+    node "Ubuntu 24 LTS" <<operating system>> as OS4 {
+      node "Docker Container" <<execution environment>> as Docker4 {
+        component "Email Service\nSendMail/SMTP" <<service>> as EmailService
+      }
+    }
+  }
+  
+  ' Cluster Node 3
+  node "Cluster Node 3" <<server>> as S3{
+    node "Ubuntu 24 LTS" <<operating system>> as OS3 {
+      node "Docker Container" <<execution environment>> as Docker3 {
+        database "Database\nPostgreSQL/MySQL" <<database>> as DB
+      }
+    }
+  }
+}
+
+' External Services
+cloud "Maps Service" <<external service>> as Maps
+
+' Connections
+MobApp ..> MapService : uses
+MobApp ..> MobWeather : uses
+
+MobApp --> MobFirewall : HTTPS\n(REST API)
+MobFirewall --> S1 : HTTPS
+
+S1 --> S2 : HTTPS\n(REST)
+S2 --> S4 : SMTP
+S2 --> S3 : SQL/TCP
+
+MapService ..> Maps : HTTPS
+
+@enduml
