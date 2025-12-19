@@ -1,0 +1,80 @@
+@startuml
+title DD - Manual Path Insertion Runtime View
+
+skinparam style strictuml
+
+actor "Registered User" as RU
+participant "Dashboard Manager" as DM
+participant "Manual Insertion Manager" as MIM
+participant "Mapping Server" as MS
+participant "Database Query Manager" as QM
+database "DBMS Server" as DB
+
+== Street Sequence Entry ==
+
+RU -> DM: accessManualPathInsertion()
+activate DM
+DM --> RU: displayManualInsertionForm()
+
+loop For each street in sequence
+    RU -> DM: enterStreetName(streetName)
+    DM -> MIM: verifyStreet(streetName)
+    activate MIM
+    
+    MIM -> MS: geocodeAddress(streetName)
+    activate MS
+    MS --> MIM: streetDetails / notFound
+    deactivate MS
+    
+    alt Street Valid
+        MIM --> DM: streetVerified(details)
+        DM -> DM: addStreetToLocalSequence(details)
+        DM --> RU: updateStreetList()
+    else Street Not Found
+        MIM --> DM: error("Street not found")
+        DM --> RU: displayError("Street not found")
+    end
+    deactivate MIM
+end
+
+== Path Details & Form Validation ==
+
+RU -> DM: submitPathDetails(status, obstacles)
+DM -> MIM: validateFormCompleteness(formData)
+activate MIM
+
+note over MIM: Checks if all mandatory fields are filled\n(Street sequence, Path Status, etc.)
+
+alt Missing Fields or Invalid Format
+    MIM --> DM: validationError("Missing mandatory fields")
+    DM --> RU: displayValidationErrors("Please complete all fields")
+else Form Valid
+    MIM --> DM: validationSuccess
+    deactivate MIM
+    
+    DM -> DM: prepareSummary()
+    DM --> RU: displayPathSummary(summaryData)
+    
+    == Confirmation & Preliminary Save ==
+    
+    RU -> DM: confirmPathData()
+    DM -> MIM: processManualEntry(pathData)
+    activate MIM
+    
+    MIM -> QM: storeDraftPath(userId, pathData)
+    activate QM
+    QM -> DB: INSERT INTO paths_draft
+    activate DB
+    DB --> QM: draftSaved
+    deactivate DB
+    QM --> MIM: storageConfirmed
+    deactivate QM
+    
+    MIM --> DM: entryReadyForPublishing
+    deactivate MIM
+    
+    DM --> RU: showSavePublishOptions()
+end
+
+deactivate DM
+@enduml
