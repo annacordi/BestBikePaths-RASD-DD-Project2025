@@ -1,0 +1,72 @@
+@startuml
+title DD - User Login Runtime View
+
+skinparam style strictuml
+
+actor "User" as U
+participant "BBP Mobile App" as APP
+participant "Dashboard Manager" as DM
+participant "Authentication Handler" as AH
+participant "Query Manager" as QM
+database "DBMS Server" as DB
+participant "Notification Manager" as NM
+participant "Mail Server" as MS
+
+== Authentication Flow ==
+
+U -> APP: Insert credentials & press "Login"
+activate APP
+
+APP -> DM: submitCredentials(email, password)
+activate DM
+
+DM -> AH: login(email, password)
+activate AH
+
+AH -> QM: verifyUser(email, password)
+activate QM
+
+QM -> DB: SELECT user FROM users_table
+activate DB
+DB --> QM: userRecord
+deactivate DB
+
+QM --> AH: userStatus (Valid/Invalid)
+deactivate QM
+
+alt Success (Valid Credentials)
+    AH -> AH: generateJWTToken()
+    AH --> DM: sessionToken
+    DM --> APP: loginSuccess(token)
+    APP --> U: Display Dashboard Home
+    
+else Failure (Invalid Credentials)
+    AH --> DM: error("Invalid Credentials")
+    DM --> APP: displayError("Email or password incorrect")
+    APP --> U: Show error message
+    
+    group Optional: Password Recovery
+        U -> APP: Press "Forgot Password"
+        APP -> DM: requestPasswordRecovery(email)
+        DM -> AH: initiateRecovery(email)
+        activate AH
+        
+        AH -> NM: sendRecoveryEmail(email)
+        activate NM
+        NM -> MS: sendEmail(recoveryLink)
+        activate MS
+        MS --> NM: emailSent
+        deactivate MS
+        NM --> AH: notificationDispatched
+        deactivate NM
+        
+        AH --> DM: recoveryInitiated
+        deactivate AH
+        DM --> APP: displayMessage("Check your email")
+        APP --> U: Show confirmation dialog
+    end
+end
+
+deactivate DM
+deactivate APP
+@enduml
