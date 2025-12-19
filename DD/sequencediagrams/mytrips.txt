@@ -1,0 +1,67 @@
+@startuml
+title DD - Visualize My Trips Runtime View
+
+skinparam style strictuml
+
+actor "Registered User" as RU
+participant "Dashboard Manager" as DM
+participant "Profile Data Manager" as PDM
+participant "Database Query Manager" as QM
+database "DBMS Server" as DB
+participant "Path Visualization Handler" as PVH
+
+== Load Trip History ==
+
+RU -> DM: navigateToMyTrips()
+activate DM
+
+DM -> PDM: getTripList(userId)
+activate PDM
+
+PDM -> QM: fetchTripsByUserId(userId)
+activate QM
+QM -> DB: fetch records (userId)
+activate DB
+DB --> QM: tripsList
+deactivate DB
+
+alt Trips Exist
+    QM --> PDM: tripsData
+    deactivate QM
+    PDM -> PDM: sortChronologically()
+    PDM --> DM: formattedTripList
+    deactivate PDM
+    DM --> RU: displayTripHistory(list)
+    
+    == View Specific Trip Details ==
+
+    RU -> DM: selectTrip(tripId)
+    
+    DM -> PDM: getFullTripData(tripId)
+    activate PDM
+    PDM -> QM: fetchDetailedTrip(tripId)
+    activate QM
+    QM -> DB: fetch detail + weather
+    activate DB
+    DB --> QM: tripFullRecord
+    deactivate DB
+    QM --> PDM: detailedData
+    deactivate QM
+    PDM --> DM: detailedSummary
+    deactivate PDM
+
+    DM -> PVH: prepareMapVisualization(pathCoordinates)
+    activate PVH
+    PVH --> DM: mapOverlayData
+    deactivate PVH
+
+    DM --> RU: displayCompleteTripView(summary, map)
+    
+else No Trips Found
+    QM --> PDM: empty
+    PDM --> DM: noTrips
+    DM --> RU: showEmptyStateMessage()
+end
+
+deactivate DM
+@enduml
