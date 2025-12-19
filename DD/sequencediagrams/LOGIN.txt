@@ -4,7 +4,7 @@ title DD - User Login Runtime View
 skinparam style strictuml
 
 actor "User" as U
-participant "BBP Mobile App" as APP
+participant "BBP" as APP
 participant "Dashboard Manager" as DM
 participant "Authentication Handler" as AH
 participant "Query Manager" as QM
