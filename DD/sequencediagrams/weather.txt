@@ -1,0 +1,54 @@
+@startuml
+title DD - Weather Info Enrichment Runtime View
+
+skinparam style strictuml
+
+participant "Dashboard Manager" as DM
+participant "Weather Integration Manager" as WIM
+participant "Weather Server" as WS
+participant "Database Query Manager" as QM
+database "DBMS Server" as DB
+
+== Enrichment Process ==
+
+note over DM: Triggered during Trip Saving flow
+
+DM -> WIM: enrichTrip(tripMetadata)
+activate WIM
+
+WIM -> WIM: extractContext(timestamp, location)
+
+WIM -> WS: requestWeather(timestamp, location)
+activate WS
+
+alt Weather Service Success
+    WS --> WIM: weatherData(temp, wind, cond)
+    WIM -> WIM: mapWeatherDataToTrip()
+    WIM --> DM: enrichedTripData
+    
+else Service Unavailable / Timeout
+    WS --X WIM: connectionError
+    WIM --> DM: originalTripData (No enrichment)
+    
+else Incomplete Data Received
+    WS --> WIM: partialData(temp)
+    WIM -> WIM: mapPartialData()
+    WIM --> DM: partiallyEnrichedData
+end
+deactivate WS
+
+deactivate WIM
+
+== Persistence ==
+
+DM -> QM: storeTrip(tripData)
+activate QM
+QM -> DB: INSERT trip_record
+activate DB
+DB --> QM: savedConfirmed
+deactivate DB
+QM --> DM: persistentSuccess
+deactivate QM
+
+note over DM: Enrichment phase finished
+@enduml
