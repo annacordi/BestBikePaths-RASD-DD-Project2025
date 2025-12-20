@@ -1,0 +1,29 @@
+@startuml
+title User Registration - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+participant "Email Service" as Email
+
+RU -> BBP: selectRegisterOption()
+BBP -> RU: sendRegistrationPage()
+RU -> BBP: submitRegistrationData(email, password, name)
+BBP -> DB: checkEmailExists(email)
+DB -> BBP: returnEmailStatus(exists: Boolean)
+
+alt exists = True
+    BBP -> RU: registrationFailure("Email already registered")
+else exists = False
+    BBP -> Email: sendVerificationEmail(email)
+    Email -> RU: deliverVerificationEmail(verificationLink)
+    RU -> BBP: clickVerificationLink(token)
+    BBP -> DB: createUser(email, password, name)
+    DB -> BBP: confirmUserCreated()
+    BBP -> RU: displayPermissionsConfiguration()
+    RU -> BBP: submitPermissionPreferences(gps, autoDetection, sensors)
+    BBP -> DB: savePermissionPreferences(userId, preferences)
+    DB -> BBP: confirmPreferencesSaved()
+    BBP -> RU: registrationSuccess("Account created successfully")
+end
+@enduml
