@@ -1,0 +1,38 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title User Login - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+RU -> BBP: selectLoginOption()
+BBP -> RU: sendLoginPage()
+RU -> BBP: submitCredentials(email: String, password: String)
+BBP -> DB: forwardCredentials(email: String, password: String)
+DB -> DB: validateCredentials(email: String, passwordHash: String)
+DB -> BBP: returnValidationResult(isValid: Boolean, errorType: String)
+
+alt isValid = True
+    BBP -> RU: loginSuccess(sessionToken)
+else isValid = False
+    alt errorType = InvalidCredentials
+        BBP -> RU: loginFailure("Invalid email or password")
+        
+        opt User wants to recover password
+            RU -> BBP: selectForgotPassword()
+            BBP -> RU: displayPasswordRecoveryForm()
+            RU -> BBP: submitEmail(email: String)
+            BBP -> DB: requestPasswordReset(email: String)
+            DB -> BBP: confirmEmailSent()
+            BBP -> RU: displayConfirmationMessage("Check your email")
+        end
+    else errorType = SystemError
+        BBP -> RU: loginFailure("An error occurred, try again later")
+    end
+end
+@enduml
