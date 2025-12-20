@@ -1,0 +1,79 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Automated Path Detection - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Device" as Device
+participant "Database" as DB
+
+note over BBP: BBP monitors user movement in background
+
+BBP -> Device: requestSpeed()
+Device -> BBP: returnSpeed(currentSpeed)
+BBP -> BBP: analyzeSpeed()
+
+alt Speed Indicates Biking Activity
+    BBP -> Device: startGPSTracking()
+    Device -> BBP: confirmGPSStarted()
+    
+    opt Sensors Enabled
+        BBP -> Device: startSensorCollection()
+        Device -> BBP: confirmSensorsStarted()
+    end
+    
+    loop While User is Biking
+        BBP -> Device: requestGPSData()
+        Device -> BBP: returnGPSData(latitude, longitude, timestamp)
+        
+        opt Sensors Active
+            BBP -> Device: requestAccelerometerData()
+            Device -> BBP: returnAccelerometerData(x, y, z)
+            BBP -> Device: requestGyroscopeData()
+            Device -> BBP: returnGyroscopeData(x, y, z)
+            BBP -> BBP: detectObstacles(location, type)
+        end
+        
+        BBP -> BBP: processTripData()
+    end
+    
+    note over BBP: Speed decreases below threshold
+    
+    BBP -> Device: stopGPSTracking()
+    Device -> BBP: confirmGPSStopped()
+    
+    opt Sensors Were Active
+        BBP -> Device: stopSensorCollection()
+        Device -> BBP: confirmSensorsStopped()
+    end
+    
+    BBP -> BBP: calculateTripStatistics()
+    BBP -> DB: storeTempTripData(tripData)
+    DB -> BBP: confirmDataStored()
+    BBP -> RU: sendNotification("Trip detected")
+    
+    RU -> BBP: openNotification()
+    BBP -> RU: displayTripSummary(distance, duration, speed, obstacles)
+    BBP -> RU: displayOptions(reviewAndEdit, discard)
+    
+    alt User Selects Discard
+        RU -> BBP: selectDiscard()
+        BBP -> DB: deleteTempData(tripId)
+        DB -> BBP: confirmDeleted()
+        BBP -> RU: displayConfirmation("Trip discarded")
+    else User Selects Review and Edit
+        RU -> BBP: selectReviewAndEdit()
+        note over RU, DB
+            Review and Save/Publish flow
+            See separate diagram
+        end note
+    end
+    
+else Speed Too Low
+    note over BBP: No biking activity detected\nContinue monitoring
+end
+@enduml
