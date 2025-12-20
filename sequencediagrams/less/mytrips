@@ -1,0 +1,39 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Visualize My Trips - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+RU -> BBP: navigateToMyTrips()
+BBP -> DB: retrieveUserTrips(userId)
+DB -> BBP: returnTripsList(trips)
+
+alt Trips Exist
+    BBP -> BBP: sortTripsChronologically()
+    BBP -> RU: displayTripHistory(date, distance, duration)
+    
+    RU -> BBP: selectTrip(tripId)
+    BBP -> DB: retrieveTripDetails(tripId)
+    DB -> BBP: returnTripData(tripDetails)
+    
+    BBP -> RU: displayTripStatistics(date, time, distance, speed, duration, elevation)
+    BBP -> RU: displayPathData(origin, destination, route)
+    
+    opt Weather Data Stored
+        BBP -> RU: displayWeatherInformation(temperature, windSpeed, conditions)
+    end
+    
+    RU -> BBP: returnToTripList()
+    BBP -> RU: displayTripHistory(date, distance, duration)
+    
+else No Trips Found
+    BBP -> RU: displayMessage("No trips recorded yet")
+end
+
+@enduml
