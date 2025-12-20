@@ -1,0 +1,45 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Review and Save/Publish Options - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+BBP -> RU: displayReviewScreen(origin, destination, streets, obstacles, status)
+
+opt User Modifies Information
+    RU -> BBP: modifyData(origin, destination, streets, obstacles, status)
+    BBP -> BBP: updatePathInfo(modifications)
+end
+
+RU -> BBP: confirmInformation()
+
+BBP -> RU: displaySavePublishOptions(saveAsTrip, publishAsPath, saveBoth)
+RU -> BBP: selectOption(choice)
+
+alt Save as Trip Only
+    BBP -> DB: storeTripData(tripData)
+    DB -> BBP: confirmTripSaved()
+    BBP -> RU: displayConfirmation("Trip saved in My Trips")
+    
+else Publish as BikePath Only
+    BBP -> BBP: calculatePathScore(obstacles, status)
+    BBP -> DB: publishPathData(pathData, score)
+    DB -> BBP: confirmPathPublished()
+    BBP -> RU: displayConfirmation("Path published to community")
+    
+else Save & Publish Simultaneously
+    BBP -> DB: storeTripData(tripData)
+    DB -> BBP: confirmTripSaved()
+    BBP -> BBP: calculatePathScore(obstacles, status)
+    BBP -> DB: publishPathData(pathData, score)
+    DB -> BBP: confirmPathPublished()
+    BBP -> RU: displayConfirmation("Trip saved and Path published")
+end
+
+@enduml
