@@ -1,0 +1,36 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Search and Visualize Bike Paths - Sequence Diagram
+
+participant "U" as U
+participant "BBP" as BBP
+participant "Database" as DB
+participant "Map Service" as Map
+
+U -> BBP: accessSearchFeature()
+BBP -> U: displaySearchInterface()
+U -> BBP: submitSearchQuery(origin, destination)
+BBP -> DB: queryBikePaths(origin, destination)
+DB -> BBP: returnPaths(pathList)
+
+alt Paths Found
+    BBP -> BBP: rankPathsByScore()
+    BBP -> U: displayRankedPathList(paths, scores)
+    U -> BBP: selectViewOnMap()
+    BBP -> Map: requestPathVisualization(paths)
+    Map -> BBP: returnMapWithPaths()
+    BBP -> U: displayMapWithPaths()
+    
+    opt User Selects Specific Path
+        U -> BBP: selectPath(pathId)
+        BBP -> U: displayPathDetails(status, obstacles, score)
+    end
+else No Paths Found
+    BBP -> U: displayMessage("No paths available for this route")
+end
+
+@enduml
