@@ -1,0 +1,67 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Start and Stop Trip Recording - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Database" as DB
+
+RU -> BBP: tapStartRecording()
+BBP -> BBP: checkGPSPermission()
+
+alt GPS Permission Not Granted
+    BBP -> RU: requestGPSPermission()
+    
+    alt User Grants Permission
+        RU -> BBP: grantGPSPermission()
+        BBP -> BBP: initializeGPSTracking()
+    else User Denies Permission
+        RU -> BBP: denyGPSPermission()
+        BBP -> RU: displayError("GPS required for recording")
+    end
+else GPS Permission Granted
+    BBP -> BBP: initializeGPSTracking()
+end
+
+alt Sensors Enabled in User Preferences
+    BBP -> BBP: initializeSensorCollection()
+else Sensors Disabled
+    note over BBP: Proceed without obstacle detection
+end
+
+BBP -> RU: displayStopRecordingButton()
+
+loop During Trip
+    BBP -> BBP: collectGPSData(latitude, longitude, timestamp)
+    
+    opt If Sensors Active
+        BBP -> BBP: collectSensorData(accelerometer, gyroscope)
+        BBP -> BBP: detectObstacles()
+    end
+end
+
+RU -> BBP: tapStopRecording()
+BBP -> BBP: stopTracking()
+BBP -> BBP: calculateTripStatistics()
+BBP -> DB: storeTempTripData(tripData)
+DB -> BBP: confirmDataStored()
+BBP -> RU: displayTripSummary(distance, duration, speed, obstacles)
+BBP -> RU: displayOptions(reviewAndEdit, discard)
+
+alt User Selects Discard
+    RU -> BBP: selectDiscard()
+    BBP -> DB: deleteTempData(tripId)
+    DB -> BBP: confirmDeleted()
+    BBP -> RU: displayConfirmation("Trip discarded")
+else User Selects Review and Edit
+    RU -> BBP: selectReviewAndEdit()
+    note over RU, DB
+        Review and Save/Publish flow
+        See separate diagram
+    end note
+end
+@enduml
