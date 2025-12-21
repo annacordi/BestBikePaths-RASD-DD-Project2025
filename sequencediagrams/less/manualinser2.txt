@@ -1,0 +1,49 @@
+@startuml
+skinparam sequence {
+    AltBackgroundColor white
+    AltBorderColor black
+}
+
+title Manual Path Insertion - Sequence Diagram
+
+participant "RU" as RU
+participant "BBP" as BBP
+participant "Map Service" as Map
+
+RU -> BBP: accessManualPathInsertion()
+BBP -> RU: displayManualInsertionForm()
+
+loop For Each Street in Sequence
+    RU -> BBP: enterStreetName(street)
+    BBP -> Map: verifyStreet(streetName)
+    Map -> BBP: returnStreetValidation(isValid, streetDetails)
+    
+    alt Street Valid
+        BBP -> BBP: addStreetToSequence(validStreet)
+    else Street Not Found
+        BBP -> RU: displayError("Street not found. Enter valid street")
+    end
+end
+
+RU -> BBP: setPathStatus(status)
+
+opt User Wants to Report Obstacles
+    RU -> BBP: addObstacle(type, location)
+end
+
+RU -> BBP: submitPathInformation(streets, status, obstacles)
+BBP -> BBP: validatePathData()
+
+alt Validation Successful
+    BBP -> RU: displayPathSummary(streetSequence, status, obstacleList)
+    RU -> BBP: confirmPathInformation()
+    
+    note over RU, Map
+        Save/Publish Options flow
+        See separate diagram
+    end note
+    
+else Validation Failed
+    BBP -> RU: displayValidationErrors(missingFields, formatErrors)
+end
+@enduml
