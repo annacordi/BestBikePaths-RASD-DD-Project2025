@@ -1,0 +1,26 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "User" as PathInterface
+
+rectangle "Login" as Login
+rectangle "Homepage" as Homepage
+rectangle "My Profile" as MyProfile
+rectangle "My Trips" as MyTrips
+rectangle "Recording" as Recording
+rectangle "Search Paths" as Search
+
+note right of PathInterface
+  Access BBP
+end note
+
+PathInterface --> Login
+Login --> Homepage
+Homepage --> MyProfile
+Homepage --> Search
+Homepage --> MyTrips
+Homepage --> Recording
+
+
+@enduml

@@ -1,0 +1,19 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Guest User" as User
+
+rectangle "Register" as Register
+rectangle "Specify two location to search a path" as Search
+
+
+note right of User
+  Not registered user
+end note
+
+User --> Register
+User --> Search
+
+
+@enduml

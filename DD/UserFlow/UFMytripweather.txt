@@ -1,0 +1,22 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Registered User" as User
+
+rectangle "Access My Trips" as MyTrips
+rectangle "Select a single trip" as Select
+rectangle "See weather in that time stamp and location" as Weather
+
+
+note right of User
+  Retrieve info about a past path with weather enrichement
+end note
+
+User --> MyTrips
+MyTrips --> Select
+Select --> Weather
+
+
+
+@enduml

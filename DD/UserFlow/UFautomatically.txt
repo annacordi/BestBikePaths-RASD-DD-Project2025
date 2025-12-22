@@ -1,0 +1,25 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Registered User" as User
+
+rectangle "Detected movement" as Start
+rectangle "Cycling" as Bike
+rectangle "Detected stop" as Stop
+rectangle "View Statistics" as View
+rectangle "View Options" as Option
+
+note right of User
+  Start cycling
+end note
+
+User --> Start
+Start --> Bike
+Bike --> Stop
+Stop --> View
+View --> Option
+
+
+
+@enduml

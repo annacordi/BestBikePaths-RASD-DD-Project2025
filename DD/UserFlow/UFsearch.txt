@@ -1,0 +1,25 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "User" as User
+
+rectangle "Insert start and end" as Insertion
+rectangle "Show paths found ranked by score" as Show
+rectangle "View details of one specific path" as Details
+rectangle "View on map" as onMap
+rectangle "View details of one specific path" as Detailsmap
+
+note right of User
+  Search a path beetween two location
+end note
+
+User --> Insertion
+Insertion --> Show
+Show --> Details
+Show --> onMap
+onMap --> Detailsmap
+
+
+
+@enduml

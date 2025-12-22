@@ -1,0 +1,21 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Registered User" as User
+
+rectangle "Insert start and stop" as Start
+rectangle "Insert trip details" as Details
+rectangle "View Options" as Option
+
+note right of User
+  Manual insertion of a path
+end note
+
+User --> Start
+Start --> Details
+Details --> Option
+
+
+
+@enduml

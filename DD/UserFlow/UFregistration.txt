@@ -1,0 +1,30 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "User" as User
+
+rectangle "Register" as Register
+rectangle "Email confirmation" as Confirmation
+rectangle "Permission Settings" as Permission
+rectangle "Homepage" as Homepage
+rectangle "My Profile" as MyProfile
+rectangle "My Trips" as MyTrips
+rectangle "Recording" as Recording
+rectangle "Search Paths" as Search
+
+note right of User
+  Register BBP
+end note
+
+User --> Register
+Register --> Confirmation
+Confirmation --> Permission
+Permission --> Homepage
+Homepage --> MyProfile
+Homepage --> Search
+Homepage --> MyTrips
+Homepage --> Recording
+
+
+@enduml

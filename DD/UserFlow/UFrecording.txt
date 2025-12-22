@@ -1,0 +1,25 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Registered User" as User
+
+rectangle "Start trip recording" as Start
+rectangle "Cycling" as Bike
+rectangle "Stop trip recording" as Stop
+rectangle "View Statistics" as View
+rectangle "View Options" as Option
+
+note right of User
+  Record a trip
+end note
+
+User --> Start
+Start --> Bike
+Bike --> Stop
+Stop --> View
+View --> Option
+
+
+
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+skinparam rectangleBackgroundColor white
+skinparam rectangleBorderColor black
+
+actor "Registered User" as User
+
+rectangle "Only publish" as Publish
+rectangle "Save and Publish" as SandP
+rectangle "Only Save" as Save
+rectangle "Discard" as Discard
+rectangle "Can view path in My Trips" as View
+
+note right of User
+  Options after trip recording or automatic detection,
+  publish phase valid also for manual trip insertion
+end note
+
+User --> Publish
+User --> Save
+User --> SandP
+User --> Discard
+SandP --> View
+Save --> View
+
+
+@enduml
