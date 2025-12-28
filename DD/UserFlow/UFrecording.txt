@@ -1,25 +1,37 @@
 @startuml
+left to right direction
 skinparam rectangleBackgroundColor white
 skinparam rectangleBorderColor black
 
 actor "Registered User" as User
-
-rectangle "Start trip recording" as Start
-rectangle "Cycling" as Bike
-rectangle "Stop trip recording" as Stop
-rectangle "View Statistics" as View
-rectangle "View Options" as Option
+rectangle "Start Trip\nRecording" as Start
+rectangle "Cycling" as Cycling
+rectangle "Stop Trip\nRecording" as Stop
+rectangle "View Data and\nPerformance metrics" as ViewData
+rectangle "Confirm" as Confirm
+rectangle "Review & Edit" as Review
+rectangle "Discard" as Discard
+rectangle "Save Options" as SaveOptions
+rectangle "Save as Trip" as SaveTrip
+rectangle "Save & Publish" as SavePublish
+rectangle "Only Publish" as OnlyPublish
 
 note right of User
-  Record a trip
+  Record cycling trip
 end note
 
 User --> Start
-Start --> Bike
-Bike --> Stop
-Stop --> View
-View --> Option
-
-
+Start --> Cycling
+Cycling --> Stop
+Stop --> ViewData
+ViewData --> Confirm
+ViewData --> Review
+ViewData --> Discard
+Review --> ViewData
+Confirm --> SaveOptions
+SaveOptions --> SaveTrip
+SaveOptions --> SavePublish
+SaveOptions --> OnlyPublish
 
 @enduml
+
