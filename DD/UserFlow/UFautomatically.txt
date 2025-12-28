@@ -1,25 +1,34 @@
 @startuml
+left to right direction
 skinparam rectangleBackgroundColor white
 skinparam rectangleBorderColor black
 
 actor "Registered User" as User
-
-rectangle "Detected movement" as Start
-rectangle "Cycling" as Bike
-rectangle "Detected stop" as Stop
-rectangle "View Statistics" as View
-rectangle "View Options" as Option
+rectangle "Start cycling" as Start
+rectangle "Detected\nmovement" as Detect
+rectangle "Cycling" as Cycling
+rectangle "Detected\nstop" as Stop
+rectangle "Notification\nreceived" as Notification
+rectangle "Trip Details" as Details
+rectangle "Confirm" as Confirm
+rectangle "Review & Edit" as Review
+rectangle "Discard" as Discard
+rectangle "Save Options" as SaveOptions
 
 note right of User
-  Start cycling
+  Automated trip detection
 end note
 
 User --> Start
-Start --> Bike
-Bike --> Stop
-Stop --> View
-View --> Option
-
-
+Start --> Detect
+Detect --> Cycling
+Cycling --> Stop
+Stop --> Notification
+Notification --> Details
+Details --> Confirm
+Details --> Review
+Details --> Discard
+Review --> Details
+Confirm --> SaveOptions
 
 @enduml
