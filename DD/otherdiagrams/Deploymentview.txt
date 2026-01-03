@@ -52,6 +52,9 @@ package "BBP Backend Deployment Perimeter" {
 ' External Services
 cloud "Maps Service" <<external service>> as Maps
 
+' External Services
+cloud "Weather Service" <<external service>> as WeathExt
+
 ' Connections
 MobApp ..> MapService : uses
 MobApp ..> MobWeather : uses
@@ -64,5 +67,6 @@ S2 --> S4 : SMTP
 S2 --> S3 : SQL/TCP
 
 MapService ..> Maps : HTTPS
+MobWeather ..> WeathExt : HTTPS
 
 @enduml
