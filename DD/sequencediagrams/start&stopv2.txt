@@ -1,0 +1,109 @@
+@startuml
+title DD - Start/Stop Trip Recording Runtime View
+
+skinparam style strictuml
+
+actor "Registered User" as RU
+participant "BBP Mobile App" as APP
+participant "Dashboard Manager" as DM
+participant "Permission Manager" as PM
+participant "Collector Manager" as RM
+participant "GPS Handler" as GPS
+participant "Sensor Data Collector" as Sensor
+participant "Statistics Calculator" as Stats
+
+== Initialization Phase ==
+
+RU -> APP: tapStartRecordingButton
+activate APP
+APP -> DM: initiateRecording()
+activate DM
+
+DM -> PM: checkGPSPermission()
+activate PM
+PM --> DM: gpsPermissionStatus
+deactivate PM
+
+alt GPS Permission Denied
+    DM --> APP: showPermissionRequest()
+    APP -> RU: Request GPS access
+    RU --> APP: Deny Permission
+    APP --> DM: permissionDenied
+    DM --> APP: displayError("GPS mandatory")
+    APP --> RU: Show error message
+else GPS Permission Granted
+    
+    group Setup Recording Session
+        DM -> RM: startRecordingSession()
+        activate RM
+        
+        RM -> GPS: initializeGPSTracking()
+        activate GPS
+        GPS --> RM: gpsReady
+        
+        RM -> PM: checkSensorConfiguration()
+        activate PM
+        PM --> RM: sensorsEnabledStatus
+        deactivate PM
+        
+        opt Sensors are Enabled
+            RM -> Sensor: initializeCollection()
+            activate Sensor
+            Sensor --> RM: sensorsReady
+        end
+        RM --> DM: sessionInitialized
+    end
+
+    DM --> APP: displayStopRecordingButton()
+    
+    == Recording Loop (In Progress) ==
+    
+    loop During Trip
+        GPS -> GPS: monitorCoordinates()
+        GPS -> RM: sendGPSCoordinates(lat, lon)
+        
+        opt Sensors Active
+            Sensor -> Sensor: monitorAccelerometer()
+            Sensor -> RM: sendSensorData(acc, gyro)
+            RM -> RM: detectObstaclesAutomatically()
+        end
+        
+        RM -> Stats: computeRealTimeStats(gpsData, sensorData)
+        activate Stats
+        Stats --> RM: currentMetrics (speed, distance)
+        deactivate Stats
+        
+        RM -> RM: storeTripDataTemporarily()
+        RM --> DM: updateLiveUI(currentMetrics)
+    end
+    
+    == Stop & Process Phase ==
+
+    RU -> APP: tapStopRecordingButton()
+    APP -> DM: stopRecording()
+    DM -> RM: endRecordingSession()
+    
+    RM -> GPS: stopGPSTracking()
+    deactivate GPS
+    
+    opt Sensors were Active
+        RM -> Sensor: stopCollection()
+        deactivate Sensor
+    end
+    
+    RM -> Stats: calculateFinalTripStatistics()
+    activate Stats
+    Stats --> RM: tripSummary(avgSpeed, totalDist, obstacles)
+    deactivate Stats
+    
+    RM --> DM: finalSummary(tripSummary)
+    deactivate RM
+    
+    DM --> APP: displayTripSummary(tripSummary)
+    APP --> RU: Show Summary & Options
+end
+
+deactivate DM
+deactivate APP
+
+@enduml
