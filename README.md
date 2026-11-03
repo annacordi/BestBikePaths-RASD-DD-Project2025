@@ -6,40 +6,45 @@ Tasnem El Koush
 
 ---
 
-## 📌 Project Overview
+## 📌 Project Overview & System Concept
 
-**Best Bike Paths (BBP)** is an end-to-end software system designed for cycling communities to crowd-source, browse, and optimize bike route inventories across urban areas.
+**Best Bike Paths (BBP)** is a theoretical system concept defined for a hypothetical biker association to support urban cycling communities in crowdsourcing, scoring, and routing across optimal bike paths.
 
-### Key System Capabilities:
-* **Trip Tracking & Performance Telemetry:** Automatic and manual recording of cycling sessions with real-time tracking of route segments, average speed, elevation, and integration with meteorological weather services.
-* **Crowdsourced Path Quality & Hazard Detection:** Multi-modal road assessment:
-  * *Manual Mode:* Users report path conditions and identify road hazards (e.g., potholes, obstacles).
-  * *Automated Mode:* Autonomous cycling activity detection via mobile sensor fusion (accelerometer, gyroscope, and GPS telemetry) to infer road surface degradation with mandatory user validation.
-* **Intelligent Pathfinding & Freshness-Weighted Scoring:** Multi-criteria path evaluation based on safety, surface quality, directness, and automated consensus algorithms that weigh fresh vs. outdated user reports.
+The analytical study covers the complete conceptual specification of:
+* **Trip Tracking & Performance Telemetry:** Use cases and data workflows for recording bike trips and integrating external weather services.
+* **Crowdsourced Path Assessment:** Specification of manual path status reporting alongside an automated mobile sensor acquisition concept (using GPS, accelerometer, and gyroscope data).
+* **Algorithmic Path Scoring & Data Merging:** Conceptual formulation of multi-criteria routing scores and rules for resolving conflicting user reports based on freshness and consensus.
 
 ---
 
-## 👥 Authors & Academic Context
+## 📄 Project Deliverables
 
-* **Anna Cordioli** ([@annacordi](https://github.com/annacordi))
-* **Tasnem El Koush** ([@TasnemElKoush](https://github.com/TasnemElKoush))
+The repository contains the sources and generated PDFs for the two official course assignments:
 
-* **Institution:** Politecnico di Milano
-* **Course:** Software Engineering 2 (Prof. Elisabetta Di Nitto)
-* **Academic Year:** 2025–2026
+### 1. Requirement Analysis and Specification Document (RASD)
+* Drafted following the **IEEE Std 830-1998** standard structure.
+* Definition of world phenomena, domain assumptions, user personas, and operational scenarios.
+* Complete functional and non-functional requirements specification.
+* Structural and behavioral modeling using **UML Use Case Diagrams**, **Activity Diagrams**, and **Statecharts**.
+* **Formal Modeling in Alloy:** Rigorous specification of core domain constraints and consistency checks via assertion validation in the Alloy Analyzer.
+
+### 2. Design Document (DD)
+* High-level architectural decomposition of the proposed system (Component and Deployment Views).
+* Runtime behavior modeled via **UML Sequence Diagrams** mapping component interactions.
+* Architectural styles and design patterns selection (e.g., Client-Server, MVC, REST APIs).
+* **Requirements Traceability Matrix (RTM):** Explicit cross-reference mapping every RASD requirement to its corresponding design element.
+* Proposed integration, test, and rollout plan.
 
 ---
 
 ## 📂 Repository Structure
 
-The project artifacts are structured in compliance with standard IEEE software engineering guidelines:
-
 ```text
 .
-├── RASD/                   # LaTeX source files, UML diagrams, and Alloy models for the RASD
-├── DD/                     # LaTeX source files, architectural diagrams, and component specs for the DD
-├── deliverables/           # Compiled, publication-ready PDF deliverables
-│   ├── RASD_v1.pdf         # Requirement Analysis and Specification Document
-│   ├── DD_v1.pdf           # Design Document
-│   └── Alloy_Model.als     # Validated formal verification model
-└── README.md               # Project documentation and summary
+├── RASD/                   # sources, diagrams, and Alloy models for the RASD
+├── DD/                     # sources and architectural diagrams for the DD
+├── deliverables/           # Compiled final PDF documents
+│   ├── RASDv1.pdf          # Final Requirement Analysis and Specification Document
+│   └── DDv1.pdf            # Final Design Document
+└── README.md
+
